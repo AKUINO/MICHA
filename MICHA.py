@@ -1,75 +1,79 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+# This code allows to communicate with the MICHA board in a pastorizator configuration. It can be use as:
+#     - a library to communicate with the MICHA board using another main code file
+#     - a standalone code to test the I/O of the MICHA board
+
 import traceback
 from serial import Serial, PARITY_NONE
 from umodbus.client.serial import rtu
 
 
-# configuration des registres
+# Registre configuration
 # coils
-THERMIS_ALIM_REG = 0x01 # excitation des thermistances
-POMPE_D_REG = 0x10 # direction de la pompe
-POMPE_A_REG = 0x11 # alimentation de la pompe
-CUVE1_REG = 0x20 # gestion de la chauffe cuve 1
-CUVE2_REG =0x21   # gestion de la chauffe cuve 2
-SOL_CHAUD_REG = 0x30   # solénoïde eau chaude
-SOL_FROID_REG = 0x31   # solénoïde eau froide
-VANNE_EVAC1_ALIM_REG = 0x32   # état de la vanne dévacuation 1
-VANNE_EVAC2_ALIM_REG = 0x34   # état de la vanne dévacuation 2
-VANNE_EVAC1_DIR_REG = 0x33   # direction de la vanne d'évacuation 1
-VANNE_EVAC2_DIR_REG = 0x35   # direction de la vanne d'évacuation 2
+#THERMIS_POW_REG = 0x01 # register which stores the thermistor power state
+PUMP_DIR_REG = 0x10 # register which stores the pump direction
+PUMP_POW_REG = 0x11 # register which stores the pump power state
+TANK1_REG = 0x20 # register which stores the tank 1 state
+TANK2_REG =0x21   # register which stores the tank 2 state
+SOL_HOT_REG = 0x30   # register which stores the hot water solenoid state
+SOL_COLD_REG = 0x31   # register which stores the cold water solenoid state
+VALVE1_POW_REG = 0x32   # register which stores the valve 1 power state
+VALVE2_POW_REG = 0x34   # register which stores the valve 2 power state
+VALVE1_DIR_REG = 0x33   # register which stores the valve 1 direction
+VALVE2_DIR_REG = 0x35   # register which stores the valve 2 direction
 # input registers
-ETAT_GEN_REG = 0x00 # état général du système
-THERMI1_REG = 0x01 # valeur de la thermistance 1
-THERMI2_REG = 0x02 # valeur de la thermistance 2
-THERMI3_REG = 0x03 # valeur de la thermistance 3
-THERMI4_REG = 0x04 # valeur de la thermistance 4
-POMPE_E_REG = 0x10   # erreur renvoyée par la pompe
-POMPE_S_REG = 0x11   # signal servo de la pompe
-ERREURS_REG = 0x20   # erreurs dans le système
+GEN_STATE_REG = 0x00 # register which stores the general state of the system
+THERMI1_REG = 0x01 # register which stores the thermistor 1 value (0 - 4095)
+THERMI2_REG = 0x02 # register which stores the thermistor 2 value (0 - 4095)
+THERMI3_REG = 0x03 # register which stores the thermistor 3 value (0 - 4095)
+THERMI4_REG = 0x04 # register which stores the thermistor 4 value (0 - 4095)
+PUMP_ERR_REG = 0x10   # register which stores the error code returned by the pump regulator
+PUMP_SERVO_REG = 0x11   # register which stores the speed returned by the pump servo
+ERROR_CODE_REG = 0x20   # register which stores the general error codes
 # holding registers
-ID_REG = 0x00   # ID Modbus de l'Arduino
-POMPE_V_REG = 0x10   # vitesse de la pompe
-POMPE_TAUX_PATINAGE_REG = 0x11   # taux d'erreur patinage
+ID_REG = 0x00   # register which stores the modbus ID
+PUMP_SPEED_REG = 0x10   # register which stores the pump speed
+#PUMP_SPIN_RATE_REG = 0x11   # register which stores the pump spining rate approved
 
 
-# Permet de gérer les thermistances
+# Class to manage the MICHA board
 class Micha:
     def __init__(self):
-        self.thermi = "all"
-        self.pompe_vitesse = 0
-        self.pompe_direction = 0
-        self.pompe_alimentation = 0
-        self.chauffe_cuve1 = 0
-        self.chauffe_cuve2 = 0
-        self.sol_eauChaude = 0
-        self.sol_eauFroide = 0
-        self.vanne1_alim = 0
-        self.vanne1_dir = 0
-        self.vanne2_alim = 0
-        self.vanne2_dir = 0
-        self.etat_general = 0
-        self.code_erreurs = 0
+        self.thermi = 0
+        self.pump_speed = 0
+        self.pump_dir = 0
+        self.pump_power = 0
+        self.tank1 = 0
+        self.tank2 = 0
+        self.sol_hot = 0
+        self.sol_cold = 0
+        self.valve1_power = 0
+        self.valve1_dir = 0
+        self.valve2_power = 0
+        self.valve2_dir = 0
+        self.general_state = 0
+        self.error_code = 0
         
-    def lecture_thermi(self, th="all"):
+    def get_thermi(self, th=0):
         self.thermi = th
         
         try:
             serial_port = get_serial_port()
             
-            if self.thermi=="all": #lecture de l'ensemble des thermistances
+            if self.thermi==0: # get the value of all the thermistors
                 message = rtu.read_input_registers(1, THERMI1_REG, 4)
-            elif self.thermi=="thermi1": #lecture de la thermistance 1
+            elif self.thermi==1: # get the thermistor 1 value
                 message = rtu.read_input_registers(1, THERMI1_REG, 1)
-            elif self.thermi=="thermi2": #lecture de la thermistance 2
+            elif self.thermi==2: # get the thermistor 2 value
                 message = rtu.read_input_registers(1, THERMI2_REG, 1)
-            elif self.thermi=="thermi3": #lecture de la thermistance 3
+            elif self.thermi==3: # get the thermistor 3 value
                 message = rtu.read_input_registers(1, THERMI3_REG, 1)
-            elif self.thermi=="thermi4": #lecture de la thermistance 4
+            elif self.thermi==4: # get the thermistor 4 value
                 message = rtu.read_input_registers(1, THERMI4_REG, 1)
             else:
-                print("ERREUR: aucune thermistance ne correspond à cette valeur")
+                print("ERROR: no thermistor was found at this value")
             
             response = rtu.send_message(message, serial_port)
             
@@ -79,14 +83,14 @@ class Micha:
     
         return response
     
-    def modif_pompe_alimentation(self,alim=0): #permet de modifier l'alimentation
-        if self.pompe_alimentation!=alim:
-            self.pompe_alimentation = alim
+    def set_pump_power(self,power=0): # to set the power of the pump
+        if self.pump_power != power:
+            self.pump_power = power
             
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, POMPE_A_REG, alim)
+                message = rtu.write_single_coil(1, PUMP_POW_REG, power)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -95,14 +99,14 @@ class Micha:
             return response
         return 0
 
-    def modif_pompe_vitesse(self,vit=0): # permet de mofifier la vitesse
-        if self.pompe_vitesse!=vit:
-            self.pompe_vitesse = vit
+    def set_pump_speed(self,speed=0): # to set the speed of the pump
+        if self.pump_speed!=speed:
+            self.pump_speed = speed
             
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_register(1, POMPE_V_REG, vit)
+                message = rtu.write_single_register(1, PUMP_SPEED_REG, speed)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -111,14 +115,14 @@ class Micha:
             return response
         return 0
     
-    def modif_pompe_direction(self,dir=0): # permet de modifier la direction
-        if self.pompe_direction!=dir:
-            self.pompe_direction = dir
+    def set_pump_dir(self,dir=0): # to set the direction of the pump
+        if self.pump_dir!=dir:
+            self.pump_dir = dir
             
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, POMPE_D_REG, dir)
+                message = rtu.write_single_coil(1, PUMP_DIR_REG, dir)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -128,53 +132,53 @@ class Micha:
             return response
         return 0
     
-    def lecture_pompe_alimentation(self):
+    def get_pump_power(self): # to get the power state of the pump (stored in the register)
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, POMPE_A_REG, 1)
+            message = rtu.read_coils(1, PUMP_POW_REG, 1)
             response = rtu.send_message(message, serial_port)
-            self.pompe_alimentation = response[0]
+            self.pump_power = response[0]
             
             serial_port.close()
         except:
             traceback.print_exc()
             
-        return self.pompe_alimentation
+        return self.pump_power
     
-    def lecture_pompe_direction(self):
+    def get_pump_dir(self): # to get the direction state of the pump (stored in the register)
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, POMPE_D_REG, 1)
+            message = rtu.read_coils(1, PUMP_DIR_REG, 1)
             response = rtu.send_message(message, serial_port)
-            self.pompe_direction = response[0]
+            self.pump_dir = response[0]
             
             serial_port.close()
         except:
             traceback.print_exc()
             
-        return self.pompe_direction
+        return self.pump_dir
     
-    def lecture_pompe_vitesse(self):
+    def get_pump_speed(self): # to get the speed of the pump (stored in the register)
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_holding_registers(1, POMPE_V_REG, 1)
+            message = rtu.read_holding_registers(1, PUMP_SPEED_REG, 1)
             response = rtu.send_message(message, serial_port)
-            self.pompe_vitesse = response[0]
+            self.pump_speed = response[0]
             
             serial_port.close()
         except:
             traceback.print_exc()
             
-        return self.pompe_vitesse
+        return self.pump_speed
     
-    def lecture_pompe_signalErreur(self): # permet de récupérer le signal d'erreur envoyé par la pompe
+    def get_pump_error(self): # to get the error code returned by the pump regulator
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_input_registers(1, POMPE_E_REG, 1)
+            message = rtu.read_input_registers(1, PUMP_ERR_REG, 1)
             response = rtu.send_message(message, serial_port)
             
             serial_port.close()
@@ -183,11 +187,11 @@ class Micha:
         
         return response[0]
             
-    def lecture_pompe_signalServo(self): # permet de récupérer le signal servo envoyé par la pompe
+    def get_pump_servo(self): # to get the pump speed returned by the servo of the pump
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_input_registers(1, POMPE_S_REG, 1)
+            message = rtu.read_input_registers(1, PUMP_SERVO_REG, 1)
             response = rtu.send_message(message, serial_port)
             
             serial_port.close()
@@ -196,14 +200,14 @@ class Micha:
         
         return response[0]
     
-    def modif_cuve1_chauffe(self,chauffe=0): #permet de gérer la chauffe de la cuve 1
-        if self.chauffe_cuve1!=chauffe:
-            self.chauffe_cuve1 = chauffe
+    def set_tank1(self,state=0): # to set the state of the tank 1
+        if self.tank1 != state:
+            self.tank1 = state
             
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, CUVE1_REG, chauffe)
+                message = rtu.write_single_coil(1, TANK1_REG, state)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -212,14 +216,14 @@ class Micha:
             return response
         return 0
 
-    def modif_cuve2_chauffe(self,chauffe=0): #permet de gérer la chauffe de la cuve 2
-        if self.chauffe_cuve2!=chauffe:
-            self.chauffe_cuve2 = chauffe
+    def set_tank2(self,state=0): # to set the state of the tank 2
+        if self.tank2 != state:
+            self.tank2 = state
             
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, CUVE2_REG, chauffe)
+                message = rtu.write_single_coil(1, TANK2_REG, state)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -228,42 +232,42 @@ class Micha:
             return response
         return 0
     
-    def lecture_cuve1_chauffe(self):
+    def get_tank1(self): # to get the state of the tank 1 (stored in the register)
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, CUVE1_REG, 1)
+            message = rtu.read_coils(1, TANK1_REG, 1)
             response = rtu.send_message(message, serial_port)
-            self.chauffe_cuve1 = response[0]
+            self.tank1 = response[0]
             
             serial_port.close()
         except:
             traceback.print_exc()
             
-        return self.chauffe_cuve1
+        return self.tank1
     
-    def lecture_cuve2_chauffe(self):
+    def get_tank2(self): # to get the state of the tank 2 (stored in the register)
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, CUVE2_REG, 1)
+            message = rtu.read_coils(1, TANK2_REG, 1)
             response = rtu.send_message(message, serial_port)
-            self.chauffe_cuve2 = response[0]
+            self.tank2 = response[0]
             
             serial_port.close()
         except:
             traceback.print_exc()
             
-        return self.chauffe_cuve2
+        return self.tank2
     
-    def modif_sol_eauChaude(self,ouverture=0): #permet de gérer le solénoïde d'eau chaude
-        if self.sol_eauChaude!=ouverture:
-            self.sol_eauChaude = ouverture
+    def set_sol_hot(self,state=0): # to set the state of the hot water solenoid
+        if self.sol_hot != state:
+            self.sol_hot = state
             
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, SOL_CHAUD_REG, ouverture)
+                message = rtu.write_single_coil(1, SOL_HOT_REG, state)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -272,14 +276,14 @@ class Micha:
             return response
         return 0
     
-    def modif_sol_eauFroide(self,ouverture=0): #permet de gérer le solénoïde d'eau froide
-        if self.sol_eauFroide!=ouverture:
-            self.sol_eauFroide = ouverture
+    def set_sol_cold(self,state=0): # to set the state of the cold water solenoid
+        if self.sol_cold != state:
+            self.sol_cold = state
             
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, SOL_FROID_REG, ouverture)
+                message = rtu.write_single_coil(1, SOL_COLD_REG, state)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -288,42 +292,42 @@ class Micha:
             return response
         return 0
     
-    def lecture_sol_eauChaude(self):
+    def get_sol_hot(self): # to get the state of the hot water solenoid (stored in the register)
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, SOL_CHAUD_REG, 1)
+            message = rtu.read_coils(1, SOL_HOT_REG, 1)
             response = rtu.send_message(message, serial_port)
-            self.sol_eauChaude = response[0]
+            self.sol_hot = response[0]
             
             serial_port.close()
         except:
             traceback.print_exc()
             
-        return self.sol_eauChaude
+        return self.sol_hot
     
-    def lecture_sol_eauFroide(self):
+    def get_sol_cold(self): # to get the state of the cold water solenoid (stored in the register)
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, SOL_FROID_REG, 1)
+            message = rtu.read_coils(1, SOL_COLD_REG, 1)
             response = rtu.send_message(message, serial_port)
-            self.sol_eauFroide = response[0]
+            self.sol_cold = response[0]
             
             serial_port.close()
         except:
             traceback.print_exc()
             
-        return self.sol_eauFroide
+        return self.sol_cold
     
-    def modif_vanne1_alimentation(self,ouverture=0): #permet de gérer la vanne d'évacuation 1
-        if self.vanne1_alim!=ouverture:
-            self.vanne1_alim = ouverture
+    def set_valve1_power(self,power=0): # to set the power state of the valve 1
+        if self.valve1_power != power:
+            self.valve1_power = power
             
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, VANNE_EVAC1_ALIM_REG, ouverture)
+                message = rtu.write_single_coil(1, VALVE1_POW_REG, power)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -332,14 +336,14 @@ class Micha:
             return response
         return 0
     
-    def modif_vanne2_alimentation(self,ouverture=0): #permet de gérer la vanne d'évacuation 2
-        if self.vanne2_alim!=ouverture:
-            self.vanne2_alim = ouverture
+    def set_valve2_power(self,power=0): # to set the power state of the valve 2
+        if self.valve2_power != power:
+            self.valve2_power = power
             
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, VANNE_EVAC2_ALIM_REG, ouverture)
+                message = rtu.write_single_coil(1, VALVE2_POW_REG, power)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -348,42 +352,42 @@ class Micha:
             return response
         return 0
     
-    def lecture_vanne1_alimentation(self):
+    def get_valve1_power(self): # to get the power state of the valve 1 (stored in the register)
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, VANNE_EVAC1_ALIM_REG, 1)
+            message = rtu.read_coils(1, VALVE1_POW_REG, 1)
             response = rtu.send_message(message, serial_port)
-            self.vanne1_alim = response[0]
+            self.valve1_power = response[0]
             
             serial_port.close()
         except:
             traceback.print_exc()
             
-        return self.vanne1_alim
+        return self.valve1_power
     
-    def lecture_vanne2_alimentation(self):
+    def get_valve2_power(self): # to get the power state of the valve 2 (stored in the register)
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, VANNE_EVAC2_ALIM_REG, 1)
+            message = rtu.read_coils(1, VALVE2_POW_REG, 1)
             response = rtu.send_message(message, serial_port)
-            self.vanne2_alim= response[0]
+            self.valve2_power= response[0]
             
             serial_port.close()
         except:
             traceback.print_exc()
             
-        return self.vanne2_alim
+        return self.valve2_power
     
-    def modif_vanne1_direction(self,dir=0): #permet de gérer la vanne d'évacuation 1
-        if self.vanne1_dir!=dir:
-            self.vanne1_dir = dir
+    def set_valve1_dir(self,dir=0): # to set the direction of the valve 1
+        if self.valve1_dir != dir:
+            self.valve1_dir = dir
             
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, VANNE_EVAC1_DIR_REG, dir)
+                message = rtu.write_single_coil(1, VALVE1_DIR_REG, dir)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -392,14 +396,14 @@ class Micha:
             return response
         return 0
     
-    def modif_vanne2_direction(self,dir=0): #permet de gérer la vanne d'évacuation 2
-        if self.vanne2_dir!=dir:
-            self.vanne2_dir = dir
+    def set_valve2_dir(self,dir=0): # to set the direction of the valve 2
+        if self.valve2_dir!=dir:
+            self.valve2_dir = dir
             
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, VANNE_EVAC2_DIR_REG, dir)
+                message = rtu.write_single_coil(1, VALVE2_DIR_REG, dir)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -408,493 +412,493 @@ class Micha:
             return response
         return 0
     
-    def lecture_vanne1_direction(self):
+    def get_valve1_dir(self): # to get the direction of the valve 1 (stored in the register)
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, VANNE_EVAC1_DIR_REG, 1)
+            message = rtu.read_coils(1, VALVE1_DIR_REG, 1)
             response = rtu.send_message(message, serial_port)
-            self.vanne1_dir = response[0]
+            self.valve1_dir = response[0]
             
             serial_port.close()
         except:
             traceback.print_exc()
             
-        return self.vanne1_dir
+        return self.valve1_dir
     
-    def lecture_vanne2_direction(self):
+    def get_valve2_dir(self): # to get the direction of the valve 2 (stored in the register)
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, VANNE_EVAC2_DIR_REG, 1)
+            message = rtu.read_coils(1, VALVE2_DIR_REG, 1)
             response = rtu.send_message(message, serial_port)
-            self.vanne2_dir= response[0]
+            self.valve2_dir= response[0]
             
             serial_port.close()
         except:
             traceback.print_exc()
             
-        return self.vanne2_dir
+        return self.valve2_dir
     
-    def lecture_etatGeneral(self):
+    def get_general_state(self): # to get the general state of the system (stored in the register)
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_input_registers(1, ETAT_GEN_REG, 4)
+            message = rtu.read_input_registers(1, GEN_STATE_REG, 4)
             response = rtu.send_message(message, serial_port)
-            self.etat_general= response[0]
+            self.general_state= response[0]
             
             serial_port.close()
         except:
             traceback.print_exc()
             
-        return self.etat_general
+        return self.general_state
     
-    def lecture_codeErreurs(self):
+    def get_error_code(self): # to get the general error code
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_input_registers(1, ERREURS_REG, 4)
+            message = rtu.read_input_registers(1, ERROR_CODE_REG, 4)
             response = rtu.send_message(message, serial_port)
-            self.code_erreurs= response[0]
+            self.error_code= response[0]
             
             serial_port.close()
         except:
             traceback.print_exc()
             
-        return self.code_erreurs
+        return self.error_code
     
 # test section
 if __name__ == "__main__":
-    # Configuration et ouverture de la communication Modbus
+    # Configuration and starting of the modbus communication
     def get_serial_port():
-        """Retourne une instance serial.Serial, prêt à être utilisé avec le RS485."""
+        """Return a serial.Serial instance which is ready to use with a RS485 adaptor."""
         port = Serial(port='/dev/serial0', baudrate=9600, parity=PARITY_NONE, stopbits=1, bytesize=8, timeout=1)
         
         return port
     
-    def choixMenu(mini,maxi):
-        choixM = '-1'
+    def menu_choice(mini,maxi):
+        choice = '-1'
         
-        while (int(choixM)<mini or int(choixM)>maxi):
-            choixM = input("Veuillez choisir une option: ")
+        while (int(choice)<mini or int(choice)>maxi):
+            choice = input("Choose an option: ")
                 
-            if (int(choixM)<mini or int(choixM)>maxi):
-                print("ERREUR: choix incorrect")
+            if (int(choice)<mini or int(choice)>maxi):
+                print("ERROR: incorrect choice. Your choice must be [{}:{}]".format(mini,maxi))
         
-        return choixM
+        return choice
 
-    # Sous-menu pour la gestion des thermistances
-    def ssMenuThermis():
-        """Affiche un sous-menu pour gérer les thermistances."""
-        choix = '-1'
+    # A sub-menu to manage the thermistors
+    def subMenu_thermis():
+        """Display a sub-menu to manage the thermistors."""
+        choice = '-1'
         
-        while choix!='0':
-            print("########## SOUS-MENU THERMISTANCES ##########")
-            print(" 1 - Lecture de la thermistance 1\n",
-                  "2 - Lecture de la thermistance 2\n",
-                  "3 - Lecture de la thermistance 3\n",
-                  "4 - Lecture de la thermistance 4\n",
-                  "5 - Lecture de l'ensemble des thermistances\n",
-                  "0 - Retour\n")
+        while choice!='0':
+            print("########## THERMISTORS SUB-MENU ##########")
+            print(" 1 - Get the thermistor 1 value\n",
+                  "2 - Get the thermistor 2 value\n",
+                  "3 - Get the thermistor 3 value\n",
+                  "4 - Get the thermistor 4 value\n",
+                  "5 - Get teh value of all the thermistors\n",
+                  "0 - Back\n")
             
-            choix = choixMenu(0,5)
+            choice = menu_choice(0,5)
             print("\n")
             
-            # Un choix valide a été fait dans le sous-menu
-            if choix!='0':
-                if choix=='1':
-                    print("Thermistance 1 = {}".format(pasto.lecture_thermi("thermi1")[0]))
-                elif choix=='2':
-                    print("Thermistance 2 = {}".format(pasto.lecture_thermi("thermi2")[0]))
-                elif choix=='3':
-                    print("Thermistance 3 = {}".format(pasto.lecture_thermi("thermi3")[0]))
-                elif choix=='4':
-                    print("Thermistance 4 = {}".format(pasto.lecture_thermi("thermi4")[0]))
-                elif choix=='5':
+            # If the choice is valid
+            if choice!='0':
+                if choice=='1':
+                    print("Thermistor 1 = {}".format(pasto.get_thermi(1)[0]))
+                elif choice=='2':
+                    print("Thermistor 2 = {}".format(pasto.get_thermi(2)[0]))
+                elif choice=='3':
+                    print("Thermistor 3 = {}".format(pasto.get_thermi(3)[0]))
+                elif choice=='4':
+                    print("Thermistor 4 = {}".format(pasto.get_thermi(4)[0]))
+                elif choice=='5':
                     i = 1
-                    for valeur in pasto.lecture_thermi():
-                        print("Thermistance {} = {}".format(i,valeur))
+                    for value in pasto.get_thermi():
+                        print("Thermistor {} = {}".format(i,value))
                         i+=1
                 
                 input()
                 
-                choix = '-1'
+                choice = '-1'
         
         return 0
 
-    # Sous-menu pour la gestion de la pompe
-    def ssMenuPompe():
-        """Affiche un sous-menu pour gérer la pompe."""
-        choix = '-1'
+    # A sub-menu to manage the pump
+    def subMenu_pump():
+        """Display a sub-menu to manage the pump."""
+        choice = '-1'
         
-        while choix!='0':
-            print("########## SOUS-MENU POMPE ##########")
-            print(" 1 - Alimentation\n",
-                  "2 - Vitesse\n",
-                  "3 - Sens de rotation\n",
-                  "4 - Lecture du signal servo\n",
-                  "5 - Lecture du signal d'erreur\n",
-                  "0 - Retour\n")
+        while choice!='0':
+            print("########## PUMP SUB-MENU ##########")
+            print(" 1 - Power\n",
+                  "2 - Speed\n",
+                  "3 - Direction\n",
+                  "4 - Get the speed return by the servo\n",
+                  "5 - Get the error code return by the regulator\n",
+                  "0 - Back\n")
             
-            choix = choixMenu(0,5)
+            choice = menu_choice(0,5)
             print("\n")
             
-            # Un choix valide a été fait dans le sous-menu
-            if choix!='0':
-                if choix=='1':
-                    print("### Alimentation ###")
+            # If the choice is valid
+            if choice!='0':
+                if choice=='1':
+                    print("### Power ###")
                     
-                    if pasto.lecture_pompe_alimentation()==0:
+                    if pasto.get_pump_power()==0:
                         print(" 0 - (OFF)\n",
                               "1 - ON\n")
-                    elif pasto.lecture_pompe_alimentation()==1:
+                    elif pasto.get_pump_power()==1:
                         print(" 0 - OFF\n",
                               "1 - (ON)\n")
                     
-                    choix = choixMenu(0,1) 
+                    choice = menu_choice(0,1) 
                     print("\n")
                     
-                    if choix=='0':
-                        pasto.modif_pompe_alimentation(0)
-                        print("Alimentation OFF")
-                    elif choix=='1':
-                        pasto.modif_pompe_alimentation(1)
-                        print("Alimentation ON")
+                    if choice=='0':
+                        pasto.set_pump_power(0)
+                        print("Power OFF")
+                    elif choice=='1':
+                        pasto.set_pump_power(1)
+                        print("Power ON")
                     input()
-                elif choix=='2':
-                    while choix!='0':
-                        print("### Vitesse ###")
-                        print("\nVitesse actuelle = {}\n".format(pasto.lecture_pompe_vitesse()))
-                        print(" 1 - Modifier\n",
-                              "0 - Retour\n")
+                elif choice=='2':
+                    while choice!='0':
+                        print("### Speed ###")
+                        print("\nCurrent speed = {}\n".format(pasto.get_pump_speed()))
+                        print(" 1 - Modify\n",
+                              "0 - Back\n")
                         
-                        choix = choixMenu(0,1) 
+                        choice = menu_choice(0,1) 
                         print("\n")
                         
-                        if choix!='0':
-                            maj_vitesse = input("Entrez une nouvelle vitesse: ")
-                            pasto.modif_pompe_vitesse(int(maj_vitesse))
-                            choix = '-1'
-                elif choix=='3':
-                    print("### Sens de rotation ###")
+                        if choice!='0':
+                            updatedSpeed = input("Enter a new speed: ")
+                            pasto.set_pump_speed(int(updatedSpeed))
+                            choice = '-1'
+                elif choice=='3':
+                    print("### Direction ###")
                     
-                    if pasto.lecture_pompe_direction()==0:
-                        print(" 0 - (Aspiration)\n",
-                              "1 - Refoulement\n")
-                    elif pasto.lecture_pompe_direction()==1:
-                        print(" 0 - Aspiration\n",
-                              "1 - (Refoulement)\n")
+                    if pasto.get_pump_dir()==0:
+                        print(" 0 - (Suction mode)\n",
+                              "1 - Backflow mode\n")
+                    elif pasto.get_pump_dir()==1:
+                        print(" 0 - Suction mode\n",
+                              "1 - (Backflow mode)\n")
                     
-                    choix = choixMenu(0,1) 
+                    choice = menu_choice(0,1) 
                     print("\n")
                     
-                    if choix=='0':
-                        pasto.modif_pompe_direction(0)
-                        print("Mode aspiration actif")
-                    elif choix=='1':
-                        pasto.modif_pompe_direction(1)
-                        print("Mode refoulement actif")
+                    if choice=='0':
+                        pasto.set_pump_dir(0)
+                        print("Suction mode ON")
+                    elif choice=='1':
+                        pasto.set_pump_dir(1)
+                        print("Backflow mode ON")
                     input()
-                elif choix=='4':
-                    print("Signal servo = {}".format(pasto.lecture_pompe_signalServo()))
+                elif choice=='4':
+                    print("Speed returned by the servo = {}".format(pasto.get_pump_servo()))
                     input()
-                elif choix=='5':
-                    print("Signal erreur = {}".format(pasto.lecture_pompe_signalErreur()))
+                elif choice=='5':
+                    print("Error returned by the regulator = {}".format(pasto.get_pump_error()))
                     input()
                 
-                choix= '-1'
+                choice= '-1'
         
         return 0
 
-    # Sous-menu pour la gestion des cuves
-    def ssMenuCuves():
-        """Affiche un sous-menu pour gérer les cuves."""
-        choix = '-1'
+    # Sub-menu to manage the tanks
+    def subMenu_tanks():
+        """Display a sub-menu to manage the tanks."""
+        choice = '-1'
         
-        while choix!='0':
-            print("########## SOUS-MENU CUVES ##########")
-            print(" 1 - Chauffe cuve 1\n",
-                  "2 - Chauffe cuve 2\n",
-                  "0 - Retour\n")
+        while choice!='0':
+            print("########## TANKS SUB-MENU ##########")
+            print(" 1 - Tank 1 state\n",
+                  "2 - Tank 2 state\n",
+                  "0 - Back\n")
             
-            choix = choixMenu(0,2)
+            choice = menu_choice(0,2)
             print("\n")
             
-            # Un choix valide a été fait dans le sous-menu
-            if choix!='0':
-                if choix=='1':
-                    print("### Chauffe cuve 1 ###")
+            # If the choice is valid
+            if choice!='0':
+                if choice=='1':
+                    print("### Tank 1 ###")
                     
-                    if pasto.lecture_cuve1_chauffe()==0:
+                    if pasto.get_tank1()==0:
                         print(" 0 - (OFF)\n",
                               "1 - ON\n")
-                    elif pasto.lecture_cuve1_chauffe()==1:
+                    elif pasto.get_tank1()==1:
                         print(" 0 - OFF\n",
                               "1 - (ON)\n")
                     
-                    choix = choixMenu(0,1) 
+                    choice = menu_choice(0,1) 
                     print("\n")
                     
-                    if choix=='0':
-                        pasto.modif_cuve1_chauffe(0)
-                        print("Chauffe cuve 1 OFF")
-                    elif choix=='1':
-                        pasto.modif_cuve1_chauffe(1)
-                        print("Chauffe cuve 1 ON")
+                    if choice=='0':
+                        pasto.set_tank1(0)
+                        print("Tank 1 OFF")
+                    elif choice=='1':
+                        pasto.set_tank1(1)
+                        print("Tank 1 ON")
                     input()
-                elif choix=='2':
-                    print("### Chauffe cuve 2 ###")
+                elif choice=='2':
+                    print("### Tank 2 ###")
                     
-                    if pasto.lecture_cuve2_chauffe()==0:
+                    if pasto.get_tank2()==0:
                         print(" 0 - (OFF)\n",
                               "1 - ON\n")
-                    elif pasto.lecture_cuve2_chauffe()==1:
+                    elif pasto.get_tank2()==1:
                         print(" 0 - OFF\n",
                               "1 - (ON)\n")
                     
-                    choix = choixMenu(0,1) 
+                    choice = menu_choice(0,1) 
                     print("\n")
                     
-                    if choix=='0':
-                        pasto.modif_cuve2_chauffe(0)
-                        print("Chauffe cuve 2 OFF")
-                    elif choix=='1':
-                        pasto.modif_cuve2_chauffe(1)
-                        print("Chauffe cuve 2 ON")
+                    if choice=='0':
+                        pasto.set_tank2(0)
+                        print("Tank 2 OFF")
+                    elif choice=='1':
+                        pasto.set_tank2(1)
+                        print("Tank 2 ON")
                     input()
             
-                choix = '-1'
+                choice = '-1'
         
         return 0
 
-    # Sous-menu pour la gestion des vannes/solénoïdes
-    def ssMenuVannesSol():
-        """Affiche un sous-menu pour gérer les vannes et solénoïdes."""
-        choix = '-1'
+    # Sub-menu to manage the valves and solenoids
+    def subMenu_valvesSol():
+        """Display en sub-menu to manage the valves and solenoids."""
+        choice = '-1'
         
-        while choix!='0':
-            print("########## SOUS-MENU VANNES/SOLENOÏDES ##########")
-            print(" 1 - Gestion solénoïde haut chaude\n",
-                  "2 - Gestion solénoïde haut froide\n",
-                  "3 - Gestion vanne d'évactuation 1\n",
-                  "4 - Gestion vanne d'évactuation 2\n",
-                  "0 - Retour\n")
+        while choice!='0':
+            print("########## VALVES AND SOLENOIDS SUB-MENU ##########")
+            print(" 1 - Hot water solenoid\n",
+                  "2 - Cold water solenoid\n",
+                  "3 - Manage the valve 1\n",
+                  "4 - Manage the valve 2\n",
+                  "0 - Back\n")
             
-            choix = choixMenu(0,4)
+            choice = menu_choice(0,4)
             print("\n")
             
-            # Un choix valide a été fait dans le sous-menu
-            if choix!='0':
-                if choix=='1':
-                    print("### Solénoïde eau chaude ###")
+            # If the choice is valid
+            if choice!='0':
+                if choice=='1':
+                    print("### Hot water solenoid ###")
                     
-                    if pasto.lecture_sol_eauChaude()==0:
-                        print(" 0 - (Fermé)\n",
-                              "1 - Ouvert\n")
-                    elif pasto.lecture_sol_eauChaude()==1:
-                        print(" 0 - Fermé\n",
-                              "1 - (Ouvert)\n")
+                    if pasto.get_sol_hot()==0:
+                        print(" 0 - (Close)\n",
+                              "1 - Open\n")
+                    elif pasto.get_sol_hot()==1:
+                        print(" 0 - Close\n",
+                              "1 - (Open)\n")
                     
-                    choix = choixMenu(0,1) 
+                    choice = menu_choice(0,1) 
                     print("\n")
                     
-                    if choix=='0':
-                        pasto.modif_sol_eauChaude(0)
-                        print("Fermeture de l'arrivée d'eau chaude")
-                    elif choix=='1':
-                        pasto.modif_sol_eauChaude(1)
-                        print("Ouverture de l'arrivée d'eau chaude")
+                    if choice=='0':
+                        pasto.set_sol_hot(0)
+                        print("Hot water solenoid is closing")
+                    elif choice=='1':
+                        pasto.set_sol_hot(1)
+                        print("Hot water solenoid is opening")
                     input()
-                elif choix=='2':
-                    print("### Solénoïde eau froide ###")
+                elif choice=='2':
+                    print("### Cold water solenoid ###")
                     
-                    if pasto.lecture_sol_eauFroide()==0:
-                        print(" 0 - (Fermé)\n",
-                              "1 - Ouvert\n")
-                    elif pasto.lecture_sol_eauFroide()==1:
-                        print(" 0 - Fermé\n",
-                              "1 - (Ouvert)\n")
+                    if pasto.get_sol_cold()==0:
+                        print(" 0 - (Close)\n",
+                              "1 - Open\n")
+                    elif pasto.get_sol_cold()==1:
+                        print(" 0 - Close\n",
+                              "1 - (Open)\n")
                     
-                    choix = choixMenu(0,1) 
+                    choice = menu_choice(0,1) 
                     print("\n")
                     
-                    if choix=='0':
-                        pasto.modif_sol_eauFroide(0)
-                        print("Fermeture de l'arrivée d'eau froide")
-                    elif choix=='1':
-                        pasto.modif_sol_eauFroide(1)
-                        print("Ouverture de l'arrivée d'eau froide")
+                    if choice=='0':
+                        pasto.set_sol_cold(0)
+                        print("Cold water solenoid is closing")
+                    elif choice=='1':
+                        pasto.set_sol_cold(1)
+                        print("Cold water solenoid is opening")
                     input()
-                elif choix=='3':
-                    while choix!='0':
-                        print("### Vanne d'évacuation 1 ###")
-                        print(" 1 - Alimentation\n",
+                elif choice=='3':
+                    while choice!='0':
+                        print("### Valve 1 ###")
+                        print(" 1 - Power\n",
                                   "2 - Direction\n",
-                                  "0 - Retour")
+                                  "0 - Back")
                         
-                        choix = choixMenu(0,2) 
+                        choice = menu_choice(0,2) 
                         print("\n")
                         
-                        if choix!='0':
-                            if choix=='1':
-                                print("### Alimentation vanne 1 ###")
+                        if choice!='0':
+                            if choice=='1':
+                                print("### Valve 1 power ###")
 
-                                if pasto.mlecture_vanne1_alimentation()==0:
+                                if pasto.get_valve1_power()==0:
                                     print(" 0 - (OFF)\n",
                                           "1 - ON")
-                                elif pasto.mlecture_vanne1_alimentation()==1:
+                                elif pasto.get_valve1_power()==1:
                                     print(" 0 - OFF\n",
                                           "1 - (ON)\n")
                                     
-                                choix = choixMenu(0,1) 
+                                choice = menu_choice(0,1) 
                                 print("\n")
                                 
-                                if choix=='0':
-                                    pasto.momodif_vanne1_alimentation(0)
-                                    print("Alimentation vanne 1 OFF")
-                                elif choix=='1':
-                                    pasto.momodif_vanne1_alimentation(1)
-                                    print("Alimentation vanne 1 ON")
+                                if choice=='0':
+                                    pasto.set_valve1_power(0)
+                                    print("Valve 1 power OFF")
+                                elif choice=='1':
+                                    pasto.set_valve1_power(1)
+                                    print("Valve 1 power ON")
                                 input()
                             
-                            elif choix=='2':
-                                print("### Direction vanne 1 ###")
+                            elif choice=='2':
+                                print("### Valve 1 direction ###")
 
-                                if pasto.lecture_vanne1_direction()==0:
+                                if pasto.get_valve1_dir()==0:
                                     print(" 0 - (Direction 1)\n",
                                           "1 - Direction 2")
-                                elif pasto.lecture_vanne1_direction()==1:
+                                elif pasto.get_valve1_dir()==1:
                                     print(" 0 - Direction 1\n",
                                           "1 - (Direction 2)\n")
                                     
-                                choix = choixMenu(0,1) 
+                                choice = menu_choice(0,1) 
                                 print("\n")
                                 
-                                if choix=='0':
-                                    pasto.modif_vanne1_direction(0)
-                                    print("Vanne 1 en direction 1")
-                                elif choix=='1':
-                                    pasto.modif_vanne1_direction(1)
-                                    print("Vanne 1 en direction 2")
+                                if choice=='0':
+                                    pasto.set_valve1_dir(0)
+                                    print("Valve 1 set in direction 1")
+                                elif choice=='1':
+                                    pasto.set_valve1_dir(1)
+                                    print("Valve 1 set in direction 2")
                                 input()
-                            choix = '-1'
-                elif choix=='4':
-                    while choix!='0':
-                        print("### Vanne d'évacuation 2 ###")
-                        print(" 1 - Alimentation\n",
+                            choice = '-1'
+                elif choice=='4':
+                    while choice!='0':
+                        print("### Valve 2 ###")
+                        print(" 1 - Power\n",
                                   "2 - Direction\n",
-                                  "0 - Retour")
+                                  "0 - Back")
                         
-                        choix = choixMenu(0,2) 
+                        choice = menu_choice(0,2) 
                         print("\n")
                         
-                        if choix!='0':
-                            if choix=='1':
-                                print("### Alimentation vanne 2 ###")
+                        if choice!='0':
+                            if choice=='1':
+                                print("### Valve 2 power ###")
 
-                                if pasto.mlecture_vanne2_alimentation()==0:
+                                if pasto.get_valve2_power()==0:
                                     print(" 0 - (OFF)\n",
                                           "1 - ON")
-                                elif pasto.mlecture_vanne2_alimentation()==1:
+                                elif pasto.get_valve2_power()==1:
                                     print(" 0 - OFF\n",
                                           "1 - (ON)\n")
                                     
-                                choix = choixMenu(0,1) 
+                                choice = menu_choice(0,1) 
                                 print("\n")
                                 
-                                if choix=='0':
-                                    pasto.momodif_vanne2_alimentation(0)
-                                    print("Alimentation vanne 2 OFF")
-                                elif choix=='1':
-                                    pasto.momodif_vanne2_alimentation(1)
-                                    print("Alimentation vanne 2 ON")
+                                if choice=='0':
+                                    pasto.set_valve2_power(0)
+                                    print("Valve 2 power OFF")
+                                elif choice=='1':
+                                    pasto.set_valve2_power(1)
+                                    print("Valve 2 power ON")
                                 input()
                             
-                            elif choix=='2':
-                                print("### Direction vanne 2 ###")
+                            elif choice=='2':
+                                print("### Valve 2 direction ###")
 
-                                if pasto.lecture_vanne2_direction()==0:
+                                if pasto.get_valve2_dir()==0:
                                     print(" 0 - (Direction 1)\n",
                                           "1 - Direction 2")
-                                elif pasto.lecture_vanne2_direction()==1:
+                                elif pasto.get_valve2_dir()==1:
                                     print(" 0 - Direction 1\n",
                                           "1 - (Direction 2)\n")
                                     
-                                choix = choixMenu(0,1) 
+                                choice = menu_choice(0,1) 
                                 print("\n")
                                 
-                                if choix=='0':
-                                    pasto.modif_vanne2_direction(0)
-                                    print("Vanne 2 en direction 1")
-                                elif choix=='1':
-                                    pasto.modif_vanne2_direction(1)
-                                    print("Vanne 2 en direction 2")
+                                if choice=='0':
+                                    pasto.set_valve2_dir(0)
+                                    print("Valve 2 set in direction 1")
+                                elif choice=='1':
+                                    pasto.set_valve2_dir(1)
+                                    print("Valve 2 set in direction 2")
                                 input()
-                            choix = '-1'
+                            choice = '-1'
             
-                choix = '-1'
+                choice = '-1'
                 
         return 0
 
-    def ssMenuEtatGeneral():
-        """Affiche les informations sur l'état général."""
+    def subMenu_generalState():
+        """Display the error code and the general state of the system"""
         
-        print("########## Etat général ##########")
-        print("Etat général = {}".format(pasto.lecture_etatGeneral()))
-        print("Code erreurs = {}\n".format(pasto.lecture_codeErreurs()))
+        print("########## General state ##########")
+        print("General state = {}".format(pasto.get_general_state()))
+        print("Error code = {}\n".format(pasto.get_error_code()))
         
         input()
 
-    def ssMenuRegistres():
-        """Affiche les informations sur sur tous les registres."""
-        print("########## Registres ##########")
-        # Thermistances
+    def subMenu_registers():
+        """Display the value of all the registers."""
+        print("########## Registers ##########")
+        # Thermistors
         i = 1
-        for valeur in pasto.lecture_thermi():
-            print("Thermistance {} \t\t= {}".format(i,valeur))
+        for value in pasto.get_thermi():
+            print("Thermistor {} \t\t= {}".format(i,value))
             i+=1
         # Pompe
-        print("Alimentation pompe \t= {}".format(pasto.lecture_pompe_alimentation()))
-        print("Vitesse pompe \t\t= {}".format(pasto.lecture_pompe_vitesse()))
-        print("Direction pompe \t= {}".format(pasto.lecture_pompe_direction()))
-        print("Signal servo pompe \t= {}".format(pasto.lecture_pompe_signalServo()))
-        print("Signal erreur pompe \t= {}".format(pasto.lecture_pompe_signalErreur()))
-        print("Chauffe cuve 1 \t\t= {}".format(pasto.lecture_cuve1_chauffe()))
-        print("Chauffe cuve 2 \t\t= {}".format(pasto.lecture_cuve2_chauffe()))
-        print("Solénoïde eau chaude \t= {}".format(pasto.lecture_sol_eauChaude()))
-        print("Solénoïde eau froide \t= {}".format(pasto.lecture_sol_eauFroide()))
-        print("Alimentation vanne 1 \t= {}".format(pasto.lecture_vanne1_alimentation()))
-        print("Direction vanne 1 \t= {}".format(pasto.lecture_vanne1_direction()))
-        print("Alimentation vanne 2 \t= {}".format(pasto.lecture_vanne2_alimentation()))
-        print("Direction vanne 2 \t= {}".format(pasto.lecture_vanne2_direction()))
+        print("Pum power \t\t= {}".format(pasto.get_pump_power()))
+        print("Pump speed \t\t= {}".format(pasto.get_pump_speed()))
+        print("Pump direction \t\t= {}".format(pasto.get_pump_dir()))
+        print("Pump servo \t\t= {}".format(pasto.get_pump_servo()))
+        print("Pump error \t\t= {}".format(pasto.get_pump_error()))
+        print("Tank 1 state \t\t= {}".format(pasto.get_tank1()))
+        print("Tank 2 state \t\t= {}".format(pasto.get_tank2()))
+        print("Hot water solenoid \t= {}".format(pasto.get_sol_hot()))
+        print("Cold water solenoid \t= {}".format(pasto.get_sol_cold()))
+        print("Valve 1 power \t\t= {}".format(pasto.get_valve1_power()))
+        print("Valve 1 direction \t= {}".format(pasto.get_valve1_dir()))
+        print("Valve 2 power \t\t= {}".format(pasto.get_valve2_power()))
+        print("Valve 2 direction \t= {}".format(pasto.get_valve2_dir()))
         
         input()
 
-    ################ programme principal ################
+    ################ main program ################
 
-    choix = '-1'
-    menuPrincipal = {'1':ssMenuThermis, '2':ssMenuPompe, '3':ssMenuCuves, '4':ssMenuVannesSol, '5':ssMenuEtatGeneral, '6':ssMenuRegistres}
+    choice = '-1'
+    menuPrincipal = {'1':subMenu_thermis, '2':subMenu_pump, '3':subMenu_tanks, '4':subMenu_valvesSol, '5':subMenu_generalState, '6':subMenu_registers}
     pasto = Micha()
 
-    while choix!='0':
+    while choice!='0':
         
         print("################ MENU ################")
-        print(" 1 - Thermistances\n",
-              "2 - Pompe\n",
-              "3 - Cuves\n",
-              "4 - Vannes/solénoïdes\n",
-              "5 - Etat général\n",
-              "6 - Affichage de tous les registres\n",
-              "0 - Quitter\n")
+        print(" 1 - Thermistors\n",
+              "2 - Pump\n",
+              "3 - Tanks\n",
+              "4 - Valves/solenoids\n",
+              "5 - General state\n",
+              "6 - All registers\n",
+              "0 - Exit\n")
         
-        choix = choixMenu(0,6)  
+        choice = menu_choice(0,6)  
         print("\n")
         
-        if choix!='0':
-            choix = menuPrincipal[choix]()
+        if choice!='0':
+            choice = menuPrincipal[choice]()
         
-            choix = '-1' 
+            choice = '-1' 
 
-    print("\nFermeture du programme...\n")
+    print("\nBye!\n")
 
