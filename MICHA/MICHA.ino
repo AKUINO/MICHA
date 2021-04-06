@@ -11,6 +11,15 @@
 // ATTENTION: les sorties correspondent directement aux valeurs des registres liés: penser à vérifier la logique
 //
 // Notes de version:
+//  - v1.0.0:
+//          - ajout d'un registre contenant la valeur d'incrémentation de la fréquence de la pompe (POMPE_V_INC_REG)
+//  - v0.3.5:
+//          - implémentation de l'augmentation progressive de vitesse de la pompe:
+//            - suppression des délais utilisés pour la lecture des thermistances
+//            - utilisation d'un clock hardware
+//  - v0.3.4:
+//          - utilisation de SAMD21turboPWM pour gérer la vitesse de la pompe
+//          - modification des pins de la pompe: POMPE_V_PIN prend la pin 2 (PWM) et POMPE_A_PIN prend la pin 0
 //  - v0.3.3:
 //          - mise à jour et restructuration des registres (modification position et nom des registres des vannes)
 //          - mise à jour des noms des pins gérant les vannes
@@ -18,6 +27,7 @@
 //          - mise à jour des sorties uniquement si modification de la valeur des registres
 //          - lecture du signal d'erreur PWM de la pompe
 //          - lecture du signal servo de la pompe
+//          - correction moyenne valeurs thermistance 4
 //  - v0.3.2:
 //          - mise à jour des registres: ajout de:
 //            - VANNE_EVAC1_DIR_REG
@@ -53,7 +63,7 @@
 #include <ArduinoModbus.h>
 #include <FlashStorage.h>
 #include "MICHA_configuration.h"    // configuration des registres et assignations des pins
-
+#include <SAMD21turboPWM.h>
 
 // pour stockage en mémoire flash de l'ID
 typedef struct StructID
@@ -65,6 +75,11 @@ typedef struct StructID
 
 FlashStorage(ID_FLASH, StructID);
 
+
+// gestion du moteur de la pompe
+TurboPWM pwm;
+unsigned long long int steps = 0;
+int8_t vitesse_flag = 0;
 
 // variables diverses
 uint32_t tps_ref = 0;             // temps de référence (pour la fréquence de mesure des thermistances)
@@ -97,7 +112,6 @@ void setup()
     Serial.println(id.id);
     Serial.print("\n");
   }
-  
   
   // configuration générale
   analogReadResolution(12);       // passage en mode 12 bits (10 bits par défaut)
@@ -154,21 +168,26 @@ void setup()
   ModbusRTUServer.configureHoldingRegisters(0x00, 32);
 
   // assignation de la valeur par défaut des registres
-  ModbusRTUServer.coilWrite(THERMIS_ALIM_REG,0);            // thermistances - alimentation: OFF
-  ModbusRTUServer.coilWrite(POMPE_D_REG,0);                 // pompe - direction: aspiration
-  ModbusRTUServer.coilWrite(POMPE_A_REG,0);                 // pompe - alimentation: OFF
-  ModbusRTUServer.coilWrite(CUVE1_REG,0);                   // cuve 1 - chauffe: OFF
-  ModbusRTUServer.coilWrite(CUVE2_REG,0);                   // cuve 2 - chauffe: OFF
-  ModbusRTUServer.coilWrite(SOL_CHAUD_REG,0);               // solénoide eau chaude: fermé
-  ModbusRTUServer.coilWrite(SOL_FROID_REG,0);               // solénoide eau froide: fermé
-  ModbusRTUServer.coilWrite(VANNE_EVAC1_ALIM_REG,0);        // vanne évacuation 1 - alimentation: OFF
-  ModbusRTUServer.coilWrite(VANNE_EVAC1_DIR_REG,0);         // vanne évacuation 1 - direction
-  ModbusRTUServer.coilWrite(VANNE_EVAC2_ALIM_REG,0);        // vanne évacuation 2 - alimentation: OFF
-  ModbusRTUServer.coilWrite(VANNE_EVAC2_DIR_REG,0);         // vanne évacuation 2 - direction
-  ModbusRTUServer.inputRegisterWrite(ETAT_GEN_REG,0);       // état général: 0 (aucun problème)
-  ModbusRTUServer.inputRegisterWrite(ERREURS_REG,0);        // code erreurs: 0
-  ModbusRTUServer.holdingRegisterWrite(ID_REG,id.id);       // ID du device
-  ModbusRTUServer.holdingRegisterWrite(POMPE_V_REG,0);      // pompe - vitesse
+  ModbusRTUServer.coilWrite(THERMIS_ALIM_REG,0);              // thermistances - alimentation: OFF
+  ModbusRTUServer.coilWrite(POMPE_D_REG,0);                   // pompe - direction: aspiration
+  ModbusRTUServer.coilWrite(POMPE_A_REG,0);                   // pompe - alimentation: OFF
+  ModbusRTUServer.coilWrite(CUVE1_REG,0);                     // cuve 1 - chauffe: OFF
+  ModbusRTUServer.coilWrite(CUVE2_REG,0);                     // cuve 2 - chauffe: OFF
+  ModbusRTUServer.coilWrite(SOL_CHAUD_REG,0);                 // solénoide eau chaude: fermé
+  ModbusRTUServer.coilWrite(SOL_FROID_REG,0);                 // solénoide eau froide: fermé
+  ModbusRTUServer.coilWrite(VANNE_EVAC1_ALIM_REG,0);          // vanne évacuation 1 - alimentation: OFF
+  ModbusRTUServer.coilWrite(VANNE_EVAC1_DIR_REG,0);           // vanne évacuation 1 - direction
+  ModbusRTUServer.coilWrite(VANNE_EVAC2_ALIM_REG,0);          // vanne évacuation 2 - alimentation: OFF
+  ModbusRTUServer.coilWrite(VANNE_EVAC2_DIR_REG,0);           // vanne évacuation 2 - direction
+  ModbusRTUServer.inputRegisterWrite(ETAT_GEN_REG,0);         // état général: 0 (aucun problème)
+  ModbusRTUServer.inputRegisterWrite(ERREURS_REG,0);          // code erreurs: 0
+  ModbusRTUServer.holdingRegisterWrite(ID_REG,id.id);         // ID du device
+  ModbusRTUServer.holdingRegisterWrite(POMPE_V_REG,0);        // pompe - vitesse
+  ModbusRTUServer.holdingRegisterWrite(POMPE_V_INC_REG,2000); // pompe - vitesse
+
+  // configuration pour gestion de la vitesse de la pompe
+  pwm.setClockDivider(1,false);
+  pwm.enable(1,true);
 }
 
 void loop() {
@@ -196,6 +215,8 @@ void loop() {
   gestion_pompe();
   gestion_cuves();
   gestion_vannes();
+
+  delay(50);
 }
 
 // met à jour les sorties dédiées aux vannes et aux solénoides en fonction des valeurs des registres (uniquement si modifiées)
@@ -269,22 +290,21 @@ void lecture_thermi()
 {
   int16_t thermis[4] = {0,0,0,0};             // stocke les valeurs des thermistances pour moyenne
 
-  for(int8_t i=0;i<3;i++)
+  digitalWrite(THERMIS_ALIM_PIN,LOW);    // alimentation des thermistances ON
+  
+  for(int8_t i=0;i<3;i++) // prise des 3 échantillons
   {
-    digitalWrite(THERMIS_ALIM_PIN,LOW);    // alimentation des thermistances ON
-    delay(15);
+    delay(10);
     
     thermis[0] = thermis[0] + analogRead(THERMI1_PIN);
     thermis[1] = thermis[1] + analogRead(THERMI2_PIN);
     thermis[2] = thermis[2] + analogRead(THERMI3_PIN);
     thermis[3] = thermis[3] + analogRead(THERMI4_PIN);
-
-    delay(15);
-    digitalWrite(THERMIS_ALIM_PIN,HIGH); // alimentation des thermistances OFF
-    delay(100);
   }
 
-  for(int8_t i=0;i<3;i++) // moyenne
+  digitalWrite(THERMIS_ALIM_PIN,HIGH); // alimentation des thermistances OFF
+
+  for(int8_t i=0;i<4;i++) // moyenne
   {
     thermis[i] = thermis[i]/3;
   }
@@ -310,16 +330,71 @@ void lecture_thermi()
 // met à jour les sorties dédiées à la pompe en fonction des valeurs des registres (uniquement si modifiées)
 void gestion_pompe()
 {
-  int8_t pompe_v = ModbusRTUServer.holdingRegisterRead(POMPE_V_REG);
-  static int8_t pompe_v_prec = 0;
+  uint16_t pompe_v = ModbusRTUServer.holdingRegisterRead(POMPE_V_REG);
+  static uint16_t pompe_v_prec = 0;
+  static int frequence_actuelle = 0;
+  int16_t frequence_inc = ModbusRTUServer.holdingRegisterRead(POMPE_V_INC_REG);;
   int8_t pompe_d = ModbusRTUServer.coilRead(POMPE_D_REG);
   int8_t pomp_a = ModbusRTUServer.coilRead(POMPE_A_REG);
   
   if(pompe_v_prec!=pompe_v)
   {
     Serial.println("Vitesse pompe modifiée");
-    analogWrite(POMPE_V_PIN,(pompe_v/64000)*4095);  // vitesse (PWM)
+
+    steps = calculSteps(pompe_v);
+    vitesse_flag = 1;
+    
     pompe_v_prec = pompe_v;
+  }
+
+  if(vitesse_flag)
+  { 
+    frequence_actuelle = pwm.frequency(1);
+    
+    if(frequence_actuelle < pompe_v)  //si la vitesse doit augmenter
+    {
+      frequence_actuelle += frequence_inc;
+      steps = calculSteps(frequence_actuelle);
+
+      if(frequence_actuelle>=pompe_v)
+      {
+        steps = calculSteps(pompe_v);
+        pwm.timer(1,1,steps,false);
+        pwm.analogWrite(POMPE_V_PIN,500); //duty-cycle = 50%
+      
+        vitesse_flag = 0;
+      }else
+      {
+        pwm.timer(1,1,steps,false);
+        pwm.analogWrite(POMPE_V_PIN,500); //duty-cycle = 50%
+      }
+    }
+    else if(frequence_actuelle > pompe_v) // si la vitesse doit diminuer
+    {
+      frequence_actuelle -= frequence_inc;
+      steps = calculSteps(frequence_actuelle);
+
+      if(frequence_actuelle <= 100) // on force à 0 Hz
+      {
+        pwm.timer(1,1,0xFFFFFF,false);
+        pwm.analogWrite(POMPE_V_PIN,0);
+        vitesse_flag = 0;
+      }else
+      {
+        if(frequence_actuelle <= pompe_v) // la fréquence ne doit pas passer sous la fréquence consigne
+        {
+          steps = calculSteps(pompe_v);
+          pwm.timer(1,1,steps,false);
+          pwm.analogWrite(POMPE_V_PIN,500); //duty-cycle = 50%
+
+          vitesse_flag = 0;
+        }else
+        {
+          pwm.timer(1,1,steps,false);
+          pwm.analogWrite(POMPE_V_PIN,500); //duty-cycle = 50%
+        }
+      }
+    }
   }
 
   if(digitalRead(POMPE_D_PIN)!=pompe_d)
@@ -334,6 +409,8 @@ void gestion_pompe()
     digitalWrite(POMPE_A_PIN,pomp_a);  // alimentation
   }
 }
+
+
 
 void lecture_signauxPompe()
 {
@@ -360,4 +437,13 @@ void gestion_id()
     Serial.println(id.nbr_ecriture);
     Serial.print("\n");
   }
+}
+
+// Retourne la valeur des steps en fonction de la fréquence voulue
+unsigned long long int calculSteps(int f)
+{
+  if(f<=0)
+    return 0;
+    
+  return VARIANT_MCK/(2*f); //VARIANT_MCK = 48MHz
 }
