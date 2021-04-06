@@ -11,6 +11,8 @@
 // ATTENTION: les sorties correspondent directement aux valeurs des registres liés: penser à vérifier la logique
 //
 // Notes de version:
+//  - v1.0.1:
+//          - Le registre THERMIS_ALIM_REG contrôle l'I/O gérant l'alimentation des thermistances
 //  - v1.0.0:
 //          - ajout d'un registre contenant la valeur d'incrémentation de la fréquence de la pompe (POMPE_V_INC_REG)
 //  - v0.3.5:
@@ -62,8 +64,8 @@
 #include <ArduinoRS485.h>           // ArduinoModbus.h dépend de ArduinoRS485
 #include <ArduinoModbus.h>
 #include <FlashStorage.h>
-#include "MICHA_configuration.h"    // configuration des registres et assignations des pins
 #include <SAMD21turboPWM.h>
+#include "MICHA_configuration.h"    // configuration des registres et assignations des pins
 
 // pour stockage en mémoire flash de l'ID
 typedef struct StructID
@@ -290,7 +292,8 @@ void lecture_thermi()
 {
   int16_t thermis[4] = {0,0,0,0};             // stocke les valeurs des thermistances pour moyenne
 
-  digitalWrite(THERMIS_ALIM_PIN,LOW);    // alimentation des thermistances ON
+  ModbusRTUServer.coilWrite(THERMIS_ALIM_REG,1);  // alimentation des thermistances ON
+  digitalWrite(THERMIS_ALIM_PIN,!ModbusRTUServer.coilRead(THERMIS_ALIM_REG));
   
   for(int8_t i=0;i<3;i++) // prise des 3 échantillons
   {
@@ -302,7 +305,8 @@ void lecture_thermi()
     thermis[3] = thermis[3] + analogRead(THERMI4_PIN);
   }
 
-  digitalWrite(THERMIS_ALIM_PIN,HIGH); // alimentation des thermistances OFF
+  ModbusRTUServer.coilWrite(THERMIS_ALIM_REG,0);  // alimentation des thermistances OFF
+  digitalWrite(THERMIS_ALIM_PIN,!ModbusRTUServer.coilRead(THERMIS_ALIM_REG));
 
   for(int8_t i=0;i<4;i++) // moyenne
   {
