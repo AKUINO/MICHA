@@ -31,7 +31,9 @@
 // holding registers
 #define ID_REG                  0x00   // ID Modbus de l'Arduino
 #define POMPE_V_REG             0x10   // vitesse de la pompe
-#define POMPE_TAUX_PATINAGE_REG 0x11   // taux d'erreur patinage
+#define POMPE_V_INC_REG         0x11   // valeur d'incrémentation/décrémentation de la fréquence
+#define POMPE_TAUX_PATINAGE_REG 0x12   // taux d'erreur patinage
+
 
 
 
@@ -43,9 +45,9 @@
 #define THERMIS_ALIM_PIN      21         // pin commande alimentation thermistances
 #define POMPE_E_PIN           19         // pin retour erreur pompe
 #define POMPE_S_PIN           20         // pin retour servo pompe
-#define POMPE_V_PIN           0          // pin commande vitesse pompe (PWM)
+#define POMPE_A_PIN           0          // pin commande vitesse pompe (PWM)
 #define POMPE_D_PIN           1          // pin commande direction pompe
-#define POMPE_A_PIN           2          // pin commande alimentation pompe
+#define POMPE_V_PIN           2          // pin commande alimentation pompe
 #define CUVE1_PIN             3          // pin commande chauffe cuve 1
 #define CUVE2_PIN             4          // pin commande chauffe cuve 2
 #define SOL_CHAUD_PIN         5          // pin commande solénoide eau chaude
