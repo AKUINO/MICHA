@@ -11,6 +11,13 @@ from umodbus.client.serial import rtu
 
 SLAVE_ID = 1
 
+VOLTAGE_REF = 2.497 # value of the excitement voltage reference
+R_DIVBRIDGE = 1998 # value of the divider bridge resistor (top resistor)
+R_TRANSISTOR = 2 # value of the conduction resistance of the transistor
+THERMI_BETA = 3694 # from datasheet
+THERMI_T25 = 10000 # value of the thermistor at 25°C
+THERMI_WIRE = 0.6 # value of the twin wire resistor
+
 
 # Registre configuration
 # coils
@@ -550,18 +557,28 @@ if __name__ == "__main__":
             
             # If the choice is valid
             if choice!='0':
+                thermi1 = pasto.get_thermi(1)[0]
+                thermi2 = pasto.get_thermi(2)[0]
+                thermi3 = pasto.get_thermi(3)[0]
+                thermi4 = pasto.get_thermi(4)[0]
+                
+                thermi1_mV = (VOLTAGE_REF*thermi1/4096)*1000
+                thermi2_mV = (VOLTAGE_REF*thermi2/4096)*1000
+                thermi3_mV = (VOLTAGE_REF*thermi3/4096)*1000
+                thermi4_mV = (VOLTAGE_REF*thermi4/4096)*1000
+                
                 if choice=='1':
-                    print("Thermistor 1 = {}".format(pasto.get_thermi(1)[0]))
+                    print("Thermistor 1 = {} ({:4.3f} mV)".format(thermi1,thermi1_mV))
                 elif choice=='2':
-                    print("Thermistor 2 = {}".format(pasto.get_thermi(2)[0]))
+                    print("Thermistor 2 = {} ({:4.3f} mV)".format(thermi2,thermi2_mV))
                 elif choice=='3':
-                    print("Thermistor 3 = {}".format(pasto.get_thermi(3)[0]))
+                    print("Thermistor 3 = {} ({:4.3f} mV)".format(thermi3,thermi3_mV))
                 elif choice=='4':
-                    print("Thermistor 4 = {}".format(pasto.get_thermi(4)[0]))
+                    print("Thermistor 4 = {} ({:4.3f} mV)".format(thermi4,thermi4_mV))
                 elif choice=='5':
                     i = 1
                     for value in pasto.get_thermi():
-                        print("Thermistor {} = {}".format(i,value))
+                        print("Thermistor {} = {} ({:4.3f} mV)".format(i,value,(VOLTAGE_REF*value/4096)*1000))
                         i+=1
                 
                 input()
