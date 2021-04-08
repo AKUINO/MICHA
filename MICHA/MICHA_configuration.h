@@ -8,6 +8,7 @@
 
 // configuration adresse relative registres
 // coils
+#define BOOT_FLAG_REG           0x00   // témoin de démarrage
 #define THERMIS_ALIM_REG        0x01   // excitation des thermistances
 #define POMPE_D_REG             0x10   // direction de la pompe
 #define POMPE_A_REG             0x11   // alimentation de la pompe

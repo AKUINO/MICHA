@@ -11,6 +11,10 @@
 // ATTENTION: les sorties correspondent directement aux valeurs des registres liés: penser à vérifier la logique
 //
 // Notes de version:
+//  - v1.1.0:
+//          - gestion des redémarrages:
+//              - ajout du registre BOOT_FLAG_REG (témoin de (re)démarrage)
+//              - gestion des registres ETAT_GEN_REG et ERREURS_REG pour les cas de redémarrages indésirables (BOD12, BOD33 et WDT)
 //  - v1.0.1:
 //          - Le registre THERMIS_ALIM_REG contrôle l'I/O gérant l'alimentation des thermistances
 //  - v1.0.0:
@@ -91,8 +95,8 @@ StructID id;                      // stocke id pour mémoire flash
 
 void setup()
 {
-  Serial.begin(9600); // pour débug
-
+  Serial.begin(9600); // pour début
+  
   
   // stockage de l'ID de la carte dans la mémoire flash
   id = ID_FLASH.read();
@@ -170,6 +174,7 @@ void setup()
   ModbusRTUServer.configureHoldingRegisters(0x00, 32);
 
   // assignation de la valeur par défaut des registres
+  ModbusRTUServer.coilWrite(BOOT_FLAG_REG,1);                 // témoin de démarrage: ON
   ModbusRTUServer.coilWrite(THERMIS_ALIM_REG,0);              // thermistances - alimentation: OFF
   ModbusRTUServer.coilWrite(POMPE_D_REG,0);                   // pompe - direction: aspiration
   ModbusRTUServer.coilWrite(POMPE_A_REG,0);                   // pompe - alimentation: OFF
@@ -190,6 +195,31 @@ void setup()
   // configuration pour gestion de la vitesse de la pompe
   pwm.setClockDivider(1,false);
   pwm.enable(1,true);
+
+  // Màj du registre d'état général en fonction de la cause du (re)démarrage
+  uint8_t rcause = REG_PM_RCAUSE;
+
+  if(rcause!=0x01 && rcause!=0x10 && rcause!=0x40) // si redémarrage non-désiré
+  {
+    ModbusRTUServer.inputRegisterWrite(ETAT_GEN_REG,ModbusRTUServer.inputRegisterRead(ETAT_GEN_REG)|1); //drapeau démarrage anormal actif
+
+    // Màj du regitres des erreurs (si erreur BOD12, BOD33 ou WDT)
+    switch(rcause)
+    {
+      case 0x02: // BOD12 reset
+        ModbusRTUServer.inputRegisterWrite(ERREURS_REG,ModbusRTUServer.inputRegisterRead(ERREURS_REG)|0x0001);
+        break;
+      case 0x04: // BOD33 reset
+        ModbusRTUServer.inputRegisterWrite(ERREURS_REG,ModbusRTUServer.inputRegisterRead(ERREURS_REG)|0x0002);
+        break;
+      case 0x20: // WDT reset
+        ModbusRTUServer.inputRegisterWrite(ERREURS_REG,ModbusRTUServer.inputRegisterRead(ERREURS_REG)|0x0004);
+        break;
+      default: // autre
+        ModbusRTUServer.inputRegisterWrite(ERREURS_REG,ModbusRTUServer.inputRegisterRead(ERREURS_REG)|0x8000);
+        break;
+    }
+  }
 }
 
 void loop() {
