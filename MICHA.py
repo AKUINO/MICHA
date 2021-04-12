@@ -45,7 +45,8 @@ ERROR_CODE_REG = 0x20   # register which stores the general error codes
 # holding registers
 ID_REG = 0x00   # register which stores the modbus ID
 PUMP_SPEED_REG = 0x10   # register which stores the pump speed
-#PUMP_SPIN_RATE_REG = 0x11   # register which stores the pump spining rate approved
+PUMP_SPEED_INC_REG = 0x11 # register which stores the increasing/decreasing value of the pump frequency
+#PUMP_SPIN_RATE_REG = 0x12   # register which stores the pump spining rate approved
 
 
 # Class to manage the MICHA board

@@ -1,234 +1,235 @@
-// PROJET MICHA
-// Programme esclave modbus
-// Type de carte: Arduino MKR Zero
-// Gestion des éléments du pasteurisateur:
-//    - pompe
-//    - cuves de chauffe
-//    - vannes
-//    - solénoides
-//    - capteurs de température (thermistances)
+// MICHA project
+// Slave modbus code
+// Board type: Arduino MKR Zero
+// Components of the pastorizator managed:
+//    - pump
+//    - 2 heating taaks
+//    - 2 valves
+//    - 2 solenoids
+//    - 4 thermistors
 //
-// ATTENTION: les sorties correspondent directement aux valeurs des registres liés: penser à vérifier la logique
+// WARNING: please verify the output states match with your hardware states (is it the same logic?)
 //
-// Notes de version:
+// Version notes:
+//  - v1.1.1:
+//          - reading of the servo signal updated (tested)
 //  - v1.1.0:
-//          - gestion des redémarrages:
-//              - ajout du registre BOOT_FLAG_REG (témoin de (re)démarrage)
-//              - gestion des registres ETAT_GEN_REG et ERREURS_REG pour les cas de redémarrages indésirables (BOD12, BOD33 et WDT)
+//          - reset detection implemented (BOD12, BOD33 and WDT) :
+//              - add BOOT_FLAG_REG
+//              - GEN_STATE_REG and ERROR_CODE_REG managed to store unwanted reboots
 //  - v1.0.1:
-//          - Le registre THERMIS_ALIM_REG contrôle l'I/O gérant l'alimentation des thermistances
+//          - THERMIS_POW_REG now controls the thermistor power pin
 //  - v1.0.0:
-//          - ajout d'un registre contenant la valeur d'incrémentation de la fréquence de la pompe (POMPE_V_INC_REG)
+//          - PUMP_SPEED_INC_REG added to store the increasing/decreasing frequency value of the pump
+//          - first version tested in the pastorizator
 //  - v0.3.5:
-//          - implémentation de l'augmentation progressive de vitesse de la pompe:
-//            - suppression des délais utilisés pour la lecture des thermistances
-//            - utilisation d'un clock hardware
+//          - progressive speeding up of the pump speed implemented:
+//            - thermistor reading delays deleted
+//            - hardware clock used
 //  - v0.3.4:
-//          - utilisation de SAMD21turboPWM pour gérer la vitesse de la pompe
-//          - modification des pins de la pompe: POMPE_V_PIN prend la pin 2 (PWM) et POMPE_A_PIN prend la pin 0
+//          - SAMD21turboPWM library usedto manage the pump speed
+//          - PUMP_SPEED_PIN and PUMP_POW_PIN updated (PUMP_SPEED_PIN = 2 (PWM) and PUMP_POW_PIN = 0)
 //  - v0.3.3:
-//          - mise à jour et restructuration des registres (modification position et nom des registres des vannes)
-//          - mise à jour des noms des pins gérant les vannes
-//          - passage par une constante pour l'ID par défaut
-//          - mise à jour des sorties uniquement si modification de la valeur des registres
-//          - lecture du signal d'erreur PWM de la pompe
-//          - lecture du signal servo de la pompe
+//          - registers updated
+//          - valve pin names updated
+//          - Using of a constant for the default modbus ID
+//          - Output updated only when a register is modified
+//          - function to read the pump error signal added (not tested)
+//          - function to read the pump servo signal added (not tested)
 //          - correction moyenne valeurs thermistance 4
 //  - v0.3.2:
-//          - mise à jour des registres: ajout de:
-//            - VANNE_EVAC1_DIR_REG
-//            - VANNE_EVAC2_DIR_REG
-//            - ERREURS_REG
+//          - registers updated:
+//            - VALVE1_DIR_REG
+//            - VALVE2_DIR_REG
+//            - ERROR_CODE_REG
 //            - POMPE_TAUX_PATINAGE_REG
-//          - mise à jour de l'assignation des pins i/o: switche entre SOL_FROID_PIN et VANNE_EVAC1_PIN
-//          - ajout de commentaires pour les registres
+//          - pinassignment updated: SOL_COLD_PIN and VANNE_EVAC1_PIN switched
+//          - register comments added
 //  - v0.3.1:
-//          - la valeur des thermistances dans le registre est maintenant la moyenne de 3 valeurs consécutives (et plus une seule)
+//          - thermistor average implemented
 //  - v0.3:
-//          - prototype des fonctions enlevées car pas nécessaires
-//          - ajout des fonctions de gestion des cuves et de gestion des vannes et solénoïdes
+//          - function prototypes deleted (because unnecessary)
+//          - tanks, solenoids and valves management functions implemented
 //  - v0.2.2:
-//          - remplacement des vannes d'évacuation simple commande par des doubles commandes --> nécessitent 2 sorties 
-//            chacune (ouverture/fermeture) mais les registres ne changent pas (1 registre/vanne)
-//          - modification des noms associés aux vannes d'eau chaude et d'eau froide: remplacement de valve par solenoide
-//          - modification des noms associés aux vannes d'évacuation: remplacement de valve par vanne
-//          - déportation dans un fichier header de la configuration des adresses des registres et de l'assignation des pins
-//          - utilisation des noms associés aux registres pour assigner les valeurs par défaut aux registres
-//          - le registre associé à la vanne d'évacuation 2 n'avait pas de valeur par défaut --> corrigé
+//          - Single control valves replaced by double control valves
+//          - solenoid names updated
+//          - valve names updated
+//          - register addresses and pin number moved to MICHA_confirutation.h
+//          - register names used to assign register default values
+//          - default value for the valve 2 register added
 //  - v0.2.1: 
-//          - ajout de la vanne d'évacuation 2
+//          - valve 2 added
 //  - v0.2:
-//          - id stockée de manière permanente dnas la mémoire flash
+//          - id in memory flash implemented
 //  - v0.1:
-//          - nouvelle structure des registres modbus: tous les registres actuels sont implémentés
+//          - register structure updated with all other registers (pump, valves...)
 //  - v0.0:
-//          - communication modbus implémentée
-//          - structure des registres modbus basique: seule le registre d'une thermistance
+//          - modbus communication implemented
+//          - thermistor registrer structure
 
-#include <ArduinoRS485.h>           // ArduinoModbus.h dépend de ArduinoRS485
+#include <ArduinoRS485.h>           // ArduinoModbus.h depends on the ArduinoRS485
 #include <ArduinoModbus.h>
 #include <FlashStorage.h>
 #include <SAMD21turboPWM.h>
-#include "MICHA_configuration.h"    // configuration des registres et assignations des pins
+#include "MICHA_configuration.h"    // register configuration and pin assignment file
 
-// pour stockage en mémoire flash de l'ID
+// To store the ID in the flash memory
 struct StructID
 {
-  boolean init;                   // mise à 1 quand la structure a été initialiser une première fois
-  int8_t id;                      // id de la carte sur le réseau modbus
-  int16_t nbr_ecriture = 0;       // nombre de réécriture de l'id depuis le dernier upload du programme sur la carte
+  boolean init;                   // set to 1 when the structure is initialized for the first time
+  int8_t id;                      // modbus ID
+  int16_t write_number = 0;       // number of rewriting of the ID since the last board flashing
 };
 
 FlashStorage(ID_FLASH, StructID);
 
 
-// gestion du moteur de la pompe
+// Pump motor management
 TurboPWM pwm;
 unsigned long long int steps = 0;
-int8_t vitesse_flag = 0;
+boolean speed_flag = 0;
 
 // variables diverses
-uint32_t tps_ref = 0;             // temps de référence (pour la fréquence de mesure des thermistances)
-uint32_t tps_ref2 = 0;            // temps de référence (pour les autres opérations de gestion)
-int8_t id_origine;                // id de la carte initiale
-StructID id;                      // stocke id pour mémoire flash
+uint32_t time_ref1 = 0;           // thermistor reading reference time
+uint32_t time_ref2 = 0;           // reference time for other operations
+StructID id;                      // stores the ID for the flash memory
+uint32_t flip, flop = 0;
+boolean currServo = false;
 
 
 void setup()
 {
-  Serial.begin(9600); // pour début
+  Serial.begin(9600);
   
   
-  // stockage de l'ID de la carte dans la mémoire flash
+  // Storing the modbus ID of the flash memory
   id = ID_FLASH.read();
 
-  if (id.init == false)   // si l'ID n'a encore jamais été initialisé
+  if (id.init == false)   // if the ID was not yet initialized
   {
-    id.id = ID; // utilisation de l'ID par défaut (1)
-    id.nbr_ecriture = 0;  // initialisation du nombre d'écriture depuis le flashage
+    id.id = ID; // using of the default ID (1)
+    id.write_number = 0;  // initialized of the write number since the last flashing
     id.init = true;
 
-    ID_FLASH.write(id);   // écriture dans la mémoire flash
+    ID_FLASH.write(id);   // writing in flash memory
 
-    Serial.print("Premier demarrage. L'ID de la carte est ");
+    Serial.print("First start. The modbus ID is ");
     Serial.println(id.id);
     Serial.print("\n");
   }else
   {
-    Serial.print("L'ID de la carte est ");
+    Serial.print("The modbus ID is ");
     Serial.println(id.id);
     Serial.print("\n");
   }
   
-  // configuration générale
-  analogReadResolution(12);       // passage en mode 12 bits (10 bits par défaut)
-  analogReference(AR_EXTERNAL);   // utilisation d'une tension externe comme référence sur AREF
+  // Main configuration
+  analogReadResolution(12);       // setting in 12 bit mode (10 bit mode by default)
+  analogReference(AR_EXTERNAL);   // using of an external voltage as AREF reference
   
-  // configuration entrées
+  // Input pin configuration
   pinMode(THERMI1_PIN,INPUT);
   pinMode(THERMI2_PIN,INPUT);
   pinMode(THERMI3_PIN,INPUT);
   pinMode(THERMI4_PIN,INPUT);
-  pinMode(POMPE_E_PIN,INPUT);
-  pinMode(POMPE_S_PIN,INPUT);
+  pinMode(PUMP_ERR_PIN,INPUT);
+  pinMode(PUMP_SPEED_PIN,INPUT);
   
-  // configuration sorties
-  pinMode(POMPE_V_PIN,OUTPUT);
-  pinMode(POMPE_D_PIN,OUTPUT);
-  pinMode(POMPE_A_PIN,OUTPUT);
-  pinMode(CUVE1_PIN,OUTPUT);
-  pinMode(CUVE2_PIN,OUTPUT);
-  pinMode(SOL_CHAUD_PIN,OUTPUT);
-  pinMode(SOL_FROID_PIN,OUTPUT);
-  pinMode(VANNE_EVAC1_ALIM_PIN,OUTPUT);
-  pinMode(VANNE_EVAC1_DIR_PIN,OUTPUT);
-  pinMode(VANNE_EVAC2_ALIM_PIN,OUTPUT);
-  pinMode(VANNE_EVAC2_DIR_PIN,OUTPUT);
-  pinMode(THERMIS_ALIM_PIN,OUTPUT);
+  // Output pin configuration
+  pinMode(PUMP_SPEED_PIN,OUTPUT);
+  pinMode(PUMP_DIR_PIN,OUTPUT);
+  pinMode(PUMP_POW_PIN,OUTPUT);
+  pinMode(TANK1_PIN,OUTPUT);
+  pinMode(TANK2_PIN,OUTPUT);
+  pinMode(SOL_HOT_PIN,OUTPUT);
+  pinMode(SOL_COLD_PIN,OUTPUT);
+  pinMode(VALVE1_POW_PIN,OUTPUT);
+  pinMode(VALVE1_DIR_PIN,OUTPUT);
+  pinMode(VALVE2_POW_PIN,OUTPUT);
+  pinMode(VALVE2_DIR_PIN,OUTPUT);
+  pinMode(THERMIS_POW_PIN,OUTPUT);
 
-  // assignation valeur défaut sorties
-  digitalWrite(POMPE_V_PIN,LOW);            // -----TEMPORAIRE-----
-  digitalWrite(POMPE_D_PIN,LOW);            // mode pompage
-  digitalWrite(POMPE_A_PIN,LOW);            // pompe non-alimentée
-  digitalWrite(CUVE1_PIN,LOW);              // chauffe cuve 1 OFF
-  digitalWrite(CUVE2_PIN,LOW);              // chauffe cuve 2 OFF
-  digitalWrite(SOL_CHAUD_PIN,LOW);          // solénoide eau chaude mode fermé
-  digitalWrite(SOL_FROID_PIN,LOW);          // solénoide eau froide mode fermé
-  digitalWrite(VANNE_EVAC1_ALIM_PIN,LOW);      // vanne évacuation 1 fermée
-  digitalWrite(VANNE_EVAC1_DIR_PIN,HIGH);     // vanne évacuation 1 fermée
-  digitalWrite(VANNE_EVAC2_ALIM_PIN,LOW);      // vanne évacuation 2 fermée
-  digitalWrite(VANNE_EVAC2_DIR_PIN,HIGH);     // vanne évacuation 2 fermée
-  digitalWrite(THERMIS_ALIM_PIN,HIGH);      // alimentation thermistances OFF
+  // Default assignment of outputs
+  digitalWrite(PUMP_SPEED_PIN,LOW);           // -----TEMPORAIRE-----
+  digitalWrite(PUMP_DIR_PIN,LOW);             // pump direction on 0
+  digitalWrite(PUMP_POW_PIN,LOW);             // pump power OFF
+  digitalWrite(TANK1_PIN,LOW);                // tank 1 OFF
+  digitalWrite(TANK2_PIN,LOW);                // tank 2 OFF
+  digitalWrite(SOL_HOT_PIN,LOW);              // hot water solenoid on 0
+  digitalWrite(SOL_COLD_PIN,LOW);             // cold water solenoid on 0
+  digitalWrite(VALVE1_POW_PIN,LOW);           // valve 1 power on 0
+  digitalWrite(VALVE1_DIR_PIN,LOW);           // valev 1 direction on 0
+  digitalWrite(VALVE2_POW_PIN,LOW);           // valve 2 power on 0
+  digitalWrite(VALVE2_DIR_PIN,LOW);           // valve 2 direction on 0
+  digitalWrite(THERMIS_POW_PIN,HIGH);         // thermistor power OFF
 
 
-  // lancement du serveur ModbusRTU
-  if (!ModbusRTUServer.begin(id.id, 9600))      // paramètres: ID=1, baudrate=9600, config=SERIAL_8N1 (8 bits, sans parité, 1 bit stop)
+  // Configuration and launching of the modbus server
+  if (!ModbusRTUServer.begin(id.id, 9600))      // parameters: ID=1, baudrate=9600, config=SERIAL_8N1 (8 bits, non parity, 1 bit stop)
   {
-    Serial.println("Echec du lancement du serveur Modbus RTU");
+    Serial.println("Starting of the Modbus RTU server failed.");
     while (1);
   }
 
 
-  // configuration des registres modbus
+  // Modbus register configuration
   ModbusRTUServer.configureCoils(0x00, 64);
   ModbusRTUServer.configureInputRegisters(0x00, 48);
   ModbusRTUServer.configureHoldingRegisters(0x00, 32);
 
-  // assignation de la valeur par défaut des registres
-  ModbusRTUServer.coilWrite(BOOT_FLAG_REG,1);                 // témoin de démarrage: ON
-  ModbusRTUServer.coilWrite(THERMIS_ALIM_REG,0);              // thermistances - alimentation: OFF
-  ModbusRTUServer.coilWrite(POMPE_D_REG,0);                   // pompe - direction: aspiration
-  ModbusRTUServer.coilWrite(POMPE_A_REG,0);                   // pompe - alimentation: OFF
-  ModbusRTUServer.coilWrite(CUVE1_REG,0);                     // cuve 1 - chauffe: OFF
-  ModbusRTUServer.coilWrite(CUVE2_REG,0);                     // cuve 2 - chauffe: OFF
-  ModbusRTUServer.coilWrite(SOL_CHAUD_REG,0);                 // solénoide eau chaude: fermé
-  ModbusRTUServer.coilWrite(SOL_FROID_REG,0);                 // solénoide eau froide: fermé
-  ModbusRTUServer.coilWrite(VANNE_EVAC1_ALIM_REG,0);          // vanne évacuation 1 - alimentation: OFF
-  ModbusRTUServer.coilWrite(VANNE_EVAC1_DIR_REG,0);           // vanne évacuation 1 - direction
-  ModbusRTUServer.coilWrite(VANNE_EVAC2_ALIM_REG,0);          // vanne évacuation 2 - alimentation: OFF
-  ModbusRTUServer.coilWrite(VANNE_EVAC2_DIR_REG,0);           // vanne évacuation 2 - direction
-  ModbusRTUServer.inputRegisterWrite(ETAT_GEN_REG,0);         // état général: 0 (aucun problème)
-  ModbusRTUServer.inputRegisterWrite(ERREURS_REG,0);          // code erreurs: 0
-  ModbusRTUServer.holdingRegisterWrite(ID_REG,id.id);         // ID du device
-  ModbusRTUServer.holdingRegisterWrite(POMPE_V_REG,0);        // pompe - vitesse
-  ModbusRTUServer.holdingRegisterWrite(POMPE_V_INC_REG,2000); // pompe - vitesse
+  // Default assignment of registers
+  ModbusRTUServer.coilWrite(BOOT_FLAG_REG,1);                     // starting flag: ON
+  ModbusRTUServer.coilWrite(THERMIS_POW_REG,0);                   // thermistors - power: OFF
+  ModbusRTUServer.coilWrite(PUMP_DIR_REG,0);                      // pump - direction: 0
+  ModbusRTUServer.coilWrite(PUMP_POW_REG,0);                      // pump - power: OFF
+  ModbusRTUServer.coilWrite(TANK1_REG,0);                         // tank 1: OFF
+  ModbusRTUServer.coilWrite(TANK2_REG,0);                         // tank 2: OFF
+  ModbusRTUServer.coilWrite(SOL_HOT_REG,0);                       // solenoid hot water: 0
+  ModbusRTUServer.coilWrite(SOL_COLD_REG,0);                      // solenoid cold water: 0
+  ModbusRTUServer.coilWrite(VALVE1_POW_REG,0);                    // valve 1 - power: OFF
+  ModbusRTUServer.coilWrite(VALVE1_DIR_REG,0);                    // valve 1 - direction: 0
+  ModbusRTUServer.coilWrite(VALVE2_POW_REG,0);                    // valve 2 - power: OFF
+  ModbusRTUServer.coilWrite(VALVE2_DIR_REG,0);                    // valve 2 - direction: 0
+  ModbusRTUServer.inputRegisterWrite(GEN_STATE_REG,0);            // general state: 0 (no problem)
+  ModbusRTUServer.inputRegisterWrite(ERROR_CODE_REG,0);           // error code: 0
+  ModbusRTUServer.holdingRegisterWrite(ID_REG,id.id);             // modbus ID
+  ModbusRTUServer.holdingRegisterWrite(PUMP_SPEED_REG,0);         // pump - speed: 0
+  ModbusRTUServer.holdingRegisterWrite(PUMP_SPEED_INC_REG,2000);  // pump - speed increasing/decreasing: 2000 Hz
 
-  // configuration pour gestion de la vitesse de la pompe
+  // Configuration to manage the pump speed
   pwm.setClockDivider(1,false);
   pwm.enable(1,true);
 
-  // Màj du registre d'état général en fonction de la cause du (re)démarrage
+  // Updating of the starting cause variable
   uint8_t rcause = REG_PM_RCAUSE;
 
-  if(rcause!=0x01 && rcause!=0x10 && rcause!=0x40) // si redémarrage non-désiré
+  if(rcause!=0x01 && rcause!=0x10 && rcause!=0x40) // if unwanted starting
   {
-    ModbusRTUServer.inputRegisterWrite(ETAT_GEN_REG,ModbusRTUServer.inputRegisterRead(ETAT_GEN_REG)|1); //drapeau démarrage anormal actif
+    ModbusRTUServer.inputRegisterWrite(GEN_STATE_REG,ModbusRTUServer.inputRegisterRead(GEN_STATE_REG)|1); // unwanted starting flag enable
 
-    // Màj du regitres des erreurs (si erreur BOD12, BOD33 ou WDT)
+    // Updating of the error register (if BOD12, BOD33 or WDT error)
     switch(rcause)
     {
       case 0x02: // BOD12 reset
-        ModbusRTUServer.inputRegisterWrite(ERREURS_REG,ModbusRTUServer.inputRegisterRead(ERREURS_REG)|0x0001);
+        ModbusRTUServer.inputRegisterWrite(ERROR_CODE_REG,ModbusRTUServer.inputRegisterRead(ERROR_CODE_REG)|0x0001);
         break;
       case 0x04: // BOD33 reset
-        ModbusRTUServer.inputRegisterWrite(ERREURS_REG,ModbusRTUServer.inputRegisterRead(ERREURS_REG)|0x0002);
+        ModbusRTUServer.inputRegisterWrite(ERROR_CODE_REG,ModbusRTUServer.inputRegisterRead(ERROR_CODE_REG)|0x0002);
         break;
       case 0x20: // WDT reset
-        ModbusRTUServer.inputRegisterWrite(ERREURS_REG,ModbusRTUServer.inputRegisterRead(ERREURS_REG)|0x0004);
+        ModbusRTUServer.inputRegisterWrite(ERROR_CODE_REG,ModbusRTUServer.inputRegisterRead(ERROR_CODE_REG)|0x0004);
         break;
       default: // autre
-        ModbusRTUServer.inputRegisterWrite(ERREURS_REG,ModbusRTUServer.inputRegisterRead(ERREURS_REG)|0x8000);
+        ModbusRTUServer.inputRegisterWrite(ERROR_CODE_REG,ModbusRTUServer.inputRegisterRead(ERROR_CODE_REG)|0x8000);
         break;
     }
   }
 }
 
-uint32_t flip, flop = 0;
-boolean currServo = false;
-
 void loop() {
   // Interrupts would be way better!
-  boolean highServo = HIGH == digitalRead(POMPE_S_PIN);
+  boolean highServo = HIGH == digitalRead(PUMP_SPEED_PIN);
+  
   if (currServo) {
     if (!highServo) {
       flop++;
@@ -241,115 +242,115 @@ void loop() {
     }    
   }
 
-  //variable pour la gestion de la fréquence de mesure des thermistances
+  // declaration and assignment of time variables to manage the thermistor reading frequency
   uint32_t tps = millis();
-  uint32_t intervalle = tps - tps_ref;
-  uint32_t intervalle2 = tps - tps_ref2;
+  uint32_t interval = tps - time_ref1;
+  uint32_t interval2 = tps - time_ref2;
 
-  if (intervalle2 > 50) {
-    //scrute commande du maitre
+  if (interval2 > 50) {
+    //scanning a command coming from the master
     ModbusRTUServer.poll();
   }
     
-  // lecture des entrées (thermistances et signaux de la pompe) chaque seconde et mise à jour des registres correspondant
-  if(intervalle>1000)  //si 1 sec écoulée
+  // This part is execute every 1 seconde
+  if(interval>1000)
   {
-    // débug: indique l'ID actuel du device (si modifié lors de la session actuelle, indique l'ID modifié)
+    // To display the modbus ID when debugging (if it has just been modified, this is display but a reboot is necessary to use this new ID)
     Serial.print("\n");
     Serial.print("Slave ID = ");
     Serial.println(id.id);
     
-    lecture_thermi();
-    lecture_signauxPompe(flip,flop);
+    get_thermis();
+    get_pumpSignals(flip,flop);
     flip = flop = 0;
-    tps_ref = tps;
+    time_ref1 = tps;
   }
 
-  if (intervalle2 > 50) {
-    gestion_id();
-    gestion_pompe();
-    gestion_cuves();
-    gestion_vannes();
+  if (interval2 > 50) {
+    manage_id();
+    manage_pump();
+    manage_tanks();
+    manage_valves();
 
-    tps_ref2 = tps;
-  }
-}
-
-// met à jour les sorties dédiées aux vannes et aux solénoides en fonction des valeurs des registres (uniquement si modifiées)
-void gestion_vannes()
-{
-  int8_t sol_chaud = ModbusRTUServer.coilRead(SOL_CHAUD_REG);
-  int8_t sol_froid = ModbusRTUServer.coilRead(SOL_FROID_REG);
-  int8_t vanne_evac1_alim = ModbusRTUServer.coilRead(VANNE_EVAC1_ALIM_REG);
-  int8_t vanne_evac1_dir = ModbusRTUServer.coilRead(VANNE_EVAC1_DIR_REG);
-  int8_t vanne_evac2_alim = ModbusRTUServer.coilRead(VANNE_EVAC2_ALIM_REG);
-  int8_t vanne_evac2_dir = ModbusRTUServer.coilRead(VANNE_EVAC2_DIR_REG);
-  
-  if(digitalRead(SOL_CHAUD_PIN)!=sol_chaud)
-  {
-    Serial.println("Etat solénoïde 1 modifié");
-    digitalWrite(SOL_CHAUD_PIN,sol_chaud);
-  }
-
-  if(digitalRead(SOL_FROID_PIN)!=sol_froid)
-  {
-    Serial.println("Etat solénoïde 2 modifié");
-    digitalWrite(SOL_FROID_PIN,sol_froid);
-  }
-
-  if(digitalRead(VANNE_EVAC1_ALIM_PIN)!=vanne_evac1_alim)
-  {
-    Serial.println("Alimentation vanne 1 modifiée");
-    digitalWrite(VANNE_EVAC1_ALIM_PIN,vanne_evac1_alim);
-  }
-
-  if(digitalRead(VANNE_EVAC1_DIR_PIN)!=vanne_evac1_dir)
-  {
-    Serial.println("Direction vanne 1 modifiée");
-    digitalWrite(VANNE_EVAC1_DIR_PIN,vanne_evac1_dir);
-  }
-
-  if(digitalRead(VANNE_EVAC2_ALIM_PIN)!=vanne_evac2_alim)
-  {
-    Serial.println("Alimentation vanne 2 modifiée");
-    digitalWrite(VANNE_EVAC2_ALIM_PIN,vanne_evac2_alim);
-  }
-
-  if(digitalRead(VANNE_EVAC2_DIR_PIN)!=vanne_evac2_dir)
-  {
-    Serial.println("Direction vanne 2 modifiée");
-    digitalWrite(VANNE_EVAC2_DIR_PIN,vanne_evac2_dir);
+    time_ref2 = tps;
   }
 }
 
-// met à jour les sorties dédiées aux cuves en fonction des valeurs des registres (uniquement si modifiées)
-void gestion_cuves()
+// Updates the valve and solenoid outputs when a register is modified
+void manage_valves()
 {
-  int8_t cuve1 = ModbusRTUServer.coilRead(CUVE1_REG);
-  int8_t cuve2 = ModbusRTUServer.coilRead(CUVE2_REG);
+  int8_t sol_hot = ModbusRTUServer.coilRead(SOL_HOT_REG);
+  int8_t sol_cold = ModbusRTUServer.coilRead(SOL_COLD_REG);
+  int8_t valve1_pow = ModbusRTUServer.coilRead(VALVE1_POW_REG);
+  int8_t valve1_dir = ModbusRTUServer.coilRead(VALVE1_DIR_REG);
+  int8_t valve2_pow = ModbusRTUServer.coilRead(VALVE2_POW_REG);
+  int8_t valve2_dir = ModbusRTUServer.coilRead(VALVE2_DIR_REG);
   
-  if(digitalRead(CUVE1_PIN)!=cuve1)
+  if(digitalRead(SOL_HOT_PIN)!=sol_hot)
   {
-    Serial.println("Etat chauffe cuve 1 modifié");
-    digitalWrite(CUVE1_PIN,cuve1);  // cuve 1
+    Serial.println("Solenoid 1 state modified");
+    digitalWrite(SOL_HOT_PIN,sol_hot);
   }
 
-  if(digitalRead(CUVE2_PIN)!=cuve2)
+  if(digitalRead(SOL_COLD_PIN)!=sol_cold)
   {
-    Serial.println("Etat chauffe cuve 2 modifié");
-    digitalWrite(CUVE2_PIN,cuve2);  // cuve 2
+    Serial.println("Solenoid 2 state modified");
+    digitalWrite(SOL_COLD_PIN,sol_cold);
+  }
+
+  if(digitalRead(VALVE1_POW_PIN)!=valve1_pow)
+  {
+    Serial.println("Valve 1 power state modified");
+    digitalWrite(VALVE1_POW_PIN,valve1_pow);
+  }
+
+  if(digitalRead(VALVE1_DIR_PIN)!=valve1_dir)
+  {
+    Serial.println("Valve 1 direction state modified");
+    digitalWrite(VALVE1_DIR_PIN,valve1_dir);
+  }
+
+  if(digitalRead(VALVE2_POW_PIN)!=valve2_pow)
+  {
+    Serial.println("Valve 2 power state modified");
+    digitalWrite(VALVE2_POW_PIN,valve2_pow);
+  }
+
+  if(digitalRead(VALVE2_DIR_PIN)!=valve2_dir)
+  {
+    Serial.println("Valve 2 direction state modified");
+    digitalWrite(VALVE2_DIR_PIN,valve2_dir);
   }
 }
 
-// lit et stocke les valeurs des thermistances dans les registres (moyenne sur 3 valeurs successives)
-void lecture_thermi()
+// Updates the tank outputs when a register is modified
+void manage_tanks()
 {
-  int16_t thermis[4] = {0,0,0,0};             // stocke les valeurs des thermistances pour moyenne
-
-  ModbusRTUServer.coilWrite(THERMIS_ALIM_REG,1);  // alimentation des thermistances ON
-  digitalWrite(THERMIS_ALIM_PIN,!ModbusRTUServer.coilRead(THERMIS_ALIM_REG));
+  int8_t tank1 = ModbusRTUServer.coilRead(TANK1_REG);
+  int8_t tank2 = ModbusRTUServer.coilRead(TANK2_REG);
   
-  for(int8_t i=0;i<3;i++) // prise des 3 échantillons
+  if(digitalRead(TANK1_PIN)!=tank1)
+  {
+    Serial.println("Tank 1 state modified");
+    digitalWrite(TANK1_PIN,tank1);
+  }
+
+  if(digitalRead(TANK2_PIN)!=tank2)
+  {
+    Serial.println("Tank 2 state modified");
+    digitalWrite(TANK2_PIN,tank2);
+  }
+}
+
+// Reads and stores the thermistor values into the registers (the storage value is an average of 3 successive values)
+void get_thermis()
+{
+  int16_t thermis[4] = {0,0,0,0};             // to store the thermistor values in the goal to compute an average
+
+  ModbusRTUServer.coilWrite(THERMIS_POW_REG,1);  // thermistor power ON
+  digitalWrite(THERMIS_POW_PIN,!ModbusRTUServer.coilRead(THERMIS_POW_REG));
+  
+  for(int8_t i=0;i<3;i++) // reading 3 values
   {
     delay(10);
     
@@ -359,21 +360,21 @@ void lecture_thermi()
     thermis[3] = thermis[3] + analogRead(THERMI4_PIN);
   }
 
-  ModbusRTUServer.coilWrite(THERMIS_ALIM_REG,0);  // alimentation des thermistances OFF
-  digitalWrite(THERMIS_ALIM_PIN,!ModbusRTUServer.coilRead(THERMIS_ALIM_REG));
+  ModbusRTUServer.coilWrite(THERMIS_POW_REG,0);  // thermistor power OFF
+  digitalWrite(THERMIS_POW_PIN,!ModbusRTUServer.coilRead(THERMIS_POW_REG));
 
-  for(int8_t i=0;i<4;i++) // moyenne
+  for(int8_t i=0;i<4;i++) // average of the 3 values
   {
     thermis[i] = thermis[i]/3;
   }
 
-  // stockage dans les registres
+  // Sttoring the averages in the registers
   ModbusRTUServer.inputRegisterWrite(THERMI1_REG,thermis[0]);
   ModbusRTUServer.inputRegisterWrite(THERMI2_REG,thermis[1]);
   ModbusRTUServer.inputRegisterWrite(THERMI3_REG,thermis[2]);
   ModbusRTUServer.inputRegisterWrite(THERMI4_REG,thermis[3]);
 
-  // pour debug
+  // To debug
   for (int8_t i=0;i<4;i++)
   {
     Serial.print("Thermi");
@@ -385,119 +386,118 @@ void lecture_thermi()
   Serial.println("\n");
 }
 
-// met à jour les sorties dédiées à la pompe en fonction des valeurs des registres (uniquement si modifiées)
-void gestion_pompe()
+// Updates the pump outputs when a register is modified
+void manage_pump()
 {
-  uint16_t pompe_v = ModbusRTUServer.holdingRegisterRead(POMPE_V_REG);
-  static uint16_t pompe_v_prec = 0;
-  static int frequence_actuelle = 0;
-  int16_t frequence_inc = ModbusRTUServer.holdingRegisterRead(POMPE_V_INC_REG);;
-  int8_t pompe_d = ModbusRTUServer.coilRead(POMPE_D_REG);
-  int8_t pomp_a = ModbusRTUServer.coilRead(POMPE_A_REG);
+  uint16_t pump_speed = ModbusRTUServer.holdingRegisterRead(PUMP_SPEED_REG);
+  static uint16_t pump_speed_prev = 0;
+  static int frequency_curr = 0; // current frequency (compute by the pwm instance)
+  int16_t frequency_inc = ModbusRTUServer.holdingRegisterRead(PUMP_SPEED_INC_REG);
+  int8_t pump_dir = ModbusRTUServer.coilRead(PUMP_DIR_REG);
+  int8_t pump_pow = ModbusRTUServer.coilRead(PUMP_POW_REG);
   
-  if(pompe_v_prec!=pompe_v)
+  if(pump_speed_prev!=pump_speed)
   {
-    Serial.println("Vitesse pompe modifiée");
+    Serial.println("Pump speed modified");
 
-    steps = calculSteps(pompe_v);
-    vitesse_flag = 1;
+    steps = calculSteps(pump_speed);
+    speed_flag = 1;
     
-    pompe_v_prec = pompe_v;
+    pump_speed_prev = pump_speed;
   }
 
-  if(vitesse_flag)
+  if(speed_flag)
   { 
-    frequence_actuelle = pwm.frequency(1);
+    frequency_curr = pwm.frequency(1);
     
-    if(frequence_actuelle < pompe_v)  //si la vitesse doit augmenter
+    if(frequency_curr < pump_speed)  // if the speed must increase
     {
-      frequence_actuelle += frequence_inc;
-      steps = calculSteps(frequence_actuelle);
+      frequency_curr += frequency_inc;
+      steps = calculSteps(frequency_curr);
 
-      if(frequence_actuelle>=pompe_v)
+      if(frequency_curr>=pump_speed)
       {
-        steps = calculSteps(pompe_v);
+        steps = calculSteps(pump_speed);
         pwm.timer(1,1,steps,false);
-        pwm.analogWrite(POMPE_V_PIN,500); //duty-cycle = 50%
+        pwm.analogWrite(PUMP_SPEED_PIN,500); //duty-cycle = 50%
       
-        vitesse_flag = 0;
+        speed_flag = 0;
       }else
       {
         pwm.timer(1,1,steps,false);
-        pwm.analogWrite(POMPE_V_PIN,500); //duty-cycle = 50%
+        pwm.analogWrite(PUMP_SPEED_PIN,500); //duty-cycle = 50%
       }
     }
-    else if(frequence_actuelle > pompe_v) // si la vitesse doit diminuer
+    else if(frequency_curr > pump_speed) // if the speed must decrease
     {
-      frequence_actuelle -= frequence_inc;
-      steps = calculSteps(frequence_actuelle);
+      frequency_curr -= frequency_inc;
+      steps = calculSteps(frequency_curr);
 
-      if(frequence_actuelle <= 100) // on force à 0 Hz
+      if(frequency_curr <= 100) // force to 0 Hz
       {
         pwm.timer(1,1,0xFFFFFF,false);
-        pwm.analogWrite(POMPE_V_PIN,0);
-        vitesse_flag = 0;
+        pwm.analogWrite(PUMP_SPEED_PIN,0);
+        speed_flag = 0;
       }else
       {
-        if(frequence_actuelle <= pompe_v) // la fréquence ne doit pas passer sous la fréquence consigne
+        if(frequency_curr <= pump_speed) // the freqyuency can not go under the setpoint frequency
         {
-          steps = calculSteps(pompe_v);
+          steps = calculSteps(pump_speed);
           pwm.timer(1,1,steps,false);
-          pwm.analogWrite(POMPE_V_PIN,500); //duty-cycle = 50%
+          pwm.analogWrite(PUMP_SPEED_PIN,500); //duty-cycle = 50%
 
-          vitesse_flag = 0;
+          speed_flag = 0;
         }else
         {
           pwm.timer(1,1,steps,false);
-          pwm.analogWrite(POMPE_V_PIN,500); //duty-cycle = 50%
+          pwm.analogWrite(PUMP_SPEED_PIN,500); //duty-cycle = 50%
         }
       }
     }
   }
 
-  if(digitalRead(POMPE_D_PIN)!=pompe_d)
+  if(digitalRead(PUMP_DIR_PIN)!=pump_dir)
   {
-    Serial.println("Direction pompe modifiée");
-    digitalWrite(POMPE_D_PIN,pompe_d);  // direction
+    Serial.println("Pump direction modified");
+    digitalWrite(PUMP_DIR_PIN,pump_dir);
   }
 
-  if(digitalRead(POMPE_A_PIN)!=pomp_a)
+  if(digitalRead(PUMP_POW_PIN)!=pump_pow)
   {
-    Serial.println("Alimentation pompe modifiée");
-    digitalWrite(POMPE_A_PIN,pomp_a);  // alimentation
+    Serial.println("Pump power modified");
+    digitalWrite(PUMP_POW_PIN,pump_pow);
   }
 }
 
-
-
-void lecture_signauxPompe(uint32_t flip, uint32_t flop)
+// Updates the servo and error registers 
+void get_pumpSignals(uint32_t flip, uint32_t flop)
 {
-  ModbusRTUServer.inputRegisterWrite(POMPE_S_REG, flip > flop ? flip : flop);
+  ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_REG, flip > flop ? flip : flop);
   
-  uint32_t pompe_e_us = pulseIn(POMPE_E_PIN,HIGH,16); // retourne la durée de l'impulsion HAUTE PWM en µs (attend l'impulsion pendant 16 µs)  
-  ModbusRTUServer.inputRegisterWrite(POMPE_E_REG,pompe_e_us);
+  uint32_t pompe_e_us = pulseIn(PUMP_ERR_PIN,HIGH,16); // retourne la durée de l'impulsion HAUTE PWM en µs (attend l'impulsion pendant 16 µs)  
+  ModbusRTUServer.inputRegisterWrite(PUMP_ERR_REG,pompe_e_us);
 }
 
-// met à jour l'id du device dans la mémoire flash uniquement lorsqu'il y a une modification de sa valeur dans le registre
-void gestion_id()
+// Updates the modbus ID in the flash memory only when modified in the register
+void manage_id()
 {
   if(id.id != ModbusRTUServer.holdingRegisterRead(ID_REG))
   {
     id.id = ModbusRTUServer.holdingRegisterRead(ID_REG);
-    id.nbr_ecriture++;
+    id.write_number++;
     ID_FLASH.write(id);
     
     Serial.print("\n");
-    Serial.println("Ecriture ID dans flash");
-    Serial.print("Nouvel ID = ");
+    Serial.println("Writing modbus ID in the flash memory");
+    Serial.print("New ID = ");
     Serial.print(id.id);
-    Serial.print(" ; Nombre d'ecriture = ");
-    Serial.println(id.nbr_ecriture);
+    Serial.print(" ; Write number = ");
+    Serial.println(id.write_number);
     Serial.print("\n");
   }
 }
 
-// Retourne la valeur des steps en fonction de la fréquence voulue
+// Returns the number of steps  according to the frequency
 unsigned long long int calculSteps(int f)
 {
   if(f<=0)

@@ -8,32 +8,32 @@
 
 // configuration adresse relative registres
 // coils
-#define BOOT_FLAG_REG           0x00   // témoin de démarrage
-#define THERMIS_ALIM_REG        0x01   // excitation des thermistances
-#define POMPE_D_REG             0x10   // direction de la pompe
-#define POMPE_A_REG             0x11   // alimentation de la pompe
-#define CUVE1_REG               0x20   // gestion de la chauffe cuve 1
-#define CUVE2_REG               0x21   // gestion de la chauffe cuve 2
-#define SOL_CHAUD_REG           0x30   // solénoïde eau chaude
-#define SOL_FROID_REG           0x31   // solénoïde eau froide
-#define VANNE_EVAC1_ALIM_REG    0x32   // alimentation de la vanne d'évacuation 1
-#define VANNE_EVAC1_DIR_REG     0x33   // direction de la vanne d'évacuation 1
-#define VANNE_EVAC2_ALIM_REG    0x34   // alimentation de la vanne d'évacuation 2
-#define VANNE_EVAC2_DIR_REG     0x35   // direction de la vanne d'évacuation 2
+#define BOOT_FLAG_REG           0x00   // register which stores the boot state
+#define THERMIS_POW_REG         0x01   // register which stores the thermistor power state
+#define PUMP_DIR_REG            0x10   // register which stores the pump direction
+#define PUMP_POW_REG            0x11   // register which stores the pump power state
+#define TANK1_REG               0x20   // register which stores the tank 1 state
+#define TANK2_REG               0x21   // register which stores the tank 2 state
+#define SOL_HOT_REG             0x30   // register which stores the hot water solenoid state
+#define SOL_COLD_REG            0x31   // register which stores the cold water solenoid state
+#define VALVE1_POW_REG          0x32   // register which stores the valve 1 power state
+#define VALVE1_DIR_REG          0x33   // register which stores the valve 1 direction
+#define VALVE2_POW_REG          0x34   // register which stores the valve 2 power state
+#define VALVE2_DIR_REG          0x35   // register which stores the valve 2 direction
 // input registers
-#define ETAT_GEN_REG            0x00   // état général du système
-#define THERMI1_REG             0x01   // valeur de la thermistance 1
-#define THERMI2_REG             0x02   // valeur de la thermistance 2
-#define THERMI3_REG             0x03   // valeur de la thermistance 3
-#define THERMI4_REG             0x04   // valeur de la thermistance 4
-#define POMPE_E_REG             0x10   // erreur renvoyée par la pompe
-#define POMPE_S_REG             0x11   // signal servo de la pompe
-#define ERREURS_REG             0x20   // erreurs dans le système
+#define GEN_STATE_REG           0x00   // register which stores the general state of the system
+#define THERMI1_REG             0x01   // register which stores the thermistor 1 value (0 - 4095)
+#define THERMI2_REG             0x02   // register which stores the thermistor 2 value (0 - 4095)
+#define THERMI3_REG             0x03   // register which stores the thermistor 3 value (0 - 4095)
+#define THERMI4_REG             0x04   // register which stores the thermistor 4 value (0 - 4095)
+#define PUMP_ERR_REG            0x10   // register which stores the error code returned by the pump regulator
+#define PUMP_SERVO_REG          0x11   // register which stores the speed returned by the pump servo
+#define ERROR_CODE_REG          0x20   // register which stores the general error codes
 // holding registers
-#define ID_REG                  0x00   // ID Modbus de l'Arduino
-#define POMPE_V_REG             0x10   // vitesse de la pompe
-#define POMPE_V_INC_REG         0x11   // valeur d'incrémentation/décrémentation de la fréquence
-#define POMPE_TAUX_PATINAGE_REG 0x12   // taux d'erreur patinage
+#define ID_REG                  0x00   // register which stores the modbus ID
+#define PUMP_SPEED_REG          0x10   // register which stores the pump speed
+#define PUMP_SPEED_INC_REG      0x11   // register which stores the increasing/decreasing value of the pump frequency
+#define PUMP_SPIN_RATE_REG      0x12   // register which stores the pump spining rate approved
 
 
 // assignation des pins au hardware
@@ -41,17 +41,17 @@
 #define THERMI2_PIN           A1         // pin thermistance 2
 #define THERMI3_PIN           A2         // pin thermistance 3
 #define THERMI4_PIN           A3         // pin thermistance 4
-#define THERMIS_ALIM_PIN      21         // pin commande alimentation thermistances
-#define POMPE_E_PIN           19         // pin retour erreur pompe
-#define POMPE_S_PIN           20         // pin retour servo pompe
-#define POMPE_A_PIN           0          // pin commande vitesse pompe (PWM)
-#define POMPE_D_PIN           1          // pin commande direction pompe
-#define POMPE_V_PIN           2          // pin commande alimentation pompe
-#define CUVE1_PIN             3          // pin commande chauffe cuve 1
-#define CUVE2_PIN             4          // pin commande chauffe cuve 2
-#define SOL_CHAUD_PIN         5          // pin commande solénoide eau chaude
-#define SOL_FROID_PIN         8          // pin commande solénoide eau froide
-#define VANNE_EVAC1_ALIM_PIN  6          // pin commande alimentation vanne d'évacuation 1
-#define VANNE_EVAC1_DIR_PIN   7          // pin commande direction vanne d'évacuation 1
-#define VANNE_EVAC2_ALIM_PIN  9          // pin commande alimentation vanne d'évacuation 2
-#define VANNE_EVAC2_DIR_PIN   10         // pin commande direction vanne d'évacuation 2
+#define THERMIS_POW_PIN       21         // pin commande alimentation thermistances
+#define PUMP_ERR_PIN          19         // pin retour erreur pompe
+#define PUMP_SPEED_PIN        20         // pin retour servo pompe
+#define PUMP_POW_PIN          0          // pin commande alimentation pompe (PWM)
+#define PUMP_DIR_PIN          1          // pin commande direction pompe
+#define PUMP_SPEED_PIN        2          // pin commande vitesse pompe
+#define TANK1_PIN             3          // pin commande chauffe cuve 1
+#define TANK2_PIN             4          // pin commande chauffe cuve 2
+#define SOL_HOT_PIN           5          // pin commande solénoide eau chaude
+#define SOL_COLD_PIN          8          // pin commande solénoide eau froide
+#define VALVE1_POW_PIN        6          // pin commande alimentation vanne d'évacuation 1
+#define VALVE1_DIR_PIN        7          // pin commande direction vanne d'évacuation 1
+#define VALVE2_POW_PIN        9          // pin commande alimentation vanne d'évacuation 2
+#define VALVE2_DIR_PIN        10         // pin commande direction vanne d'évacuation 2
