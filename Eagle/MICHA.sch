@@ -13756,8 +13756,8 @@ www.irf.com&lt;p&gt;
 <part name="GND8" library="supply1" deviceset="GND" device=""/>
 <part name="GND9" library="supply1" deviceset="GND" device=""/>
 <part name="P+2" library="supply1" library_urn="urn:adsk.eagle:library:371" deviceset="+12V" device=""/>
-<part name="R6" library="resistor" deviceset="R-EU_" device="R1206" value="2k"/>
-<part name="R7" library="resistor" deviceset="R-EU_" device="R1206" value="2k"/>
+<part name="R6" library="resistor" deviceset="R-EU_" device="R1206" value="15-1/4W"/>
+<part name="R7" library="resistor" deviceset="R-EU_" device="R1206" value="15-1/4W"/>
 <part name="TBD2" library="ic-package" library_urn="urn:adsk.eagle:library:239" deviceset="DIL18" device="S" package3d_urn="urn:adsk.eagle:package:14434/1"/>
 <part name="GND12" library="supply1" deviceset="GND" device=""/>
 <part name="P+3" library="supply1" library_urn="urn:adsk.eagle:library:371" deviceset="+12V" device=""/>
@@ -13833,8 +13833,8 @@ www.irf.com&lt;p&gt;
 <part name="+3V3" library="supply1" library_urn="urn:adsk.eagle:library:371" deviceset="+3V3" device=""/>
 <part name="GND39" library="supply1" deviceset="GND" device=""/>
 <part name="GND10" library="supply1" deviceset="GND" device=""/>
-<part name="Z1" library="Zener_SMA" deviceset="ZENER_SMA" device="" value="5,1V/1W"/>
-<part name="Z2" library="Zener_SMA" deviceset="ZENER_SMA" device="" value="5,1V/1W"/>
+<part name="Z1" library="Zener_SMA" deviceset="ZENER_SMA" device="" value="5,1V-1W"/>
+<part name="Z2" library="Zener_SMA" deviceset="ZENER_SMA" device="" value="5,1V-1W"/>
 <part name="Z3" library="Zener_SMA" deviceset="ZENER_SMA" device="" value="3,3V"/>
 <part name="Z4" library="Zener_SMA" deviceset="ZENER_SMA" device="" value="3,3V"/>
 <part name="Z5" library="Zener_SMA" deviceset="ZENER_SMA" device="" value="3,3V"/>
@@ -14685,7 +14685,7 @@ www.irf.com&lt;p&gt;
 <label x="179.578" y="97.282" size="1.778" layer="95" rot="R180"/>
 </segment>
 </net>
-<net name="VALVE1_OPEN" class="0">
+<net name="VALVE1_POWER" class="0">
 <segment>
 <wire x1="238.76" y1="106.68" x2="231.14" y2="106.68" width="0.1524" layer="91"/>
 <label x="213.106" y="105.664" size="1.778" layer="95"/>
@@ -14697,7 +14697,7 @@ www.irf.com&lt;p&gt;
 <wire x1="213.36" y1="160.02" x2="218.44" y2="160.02" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="VALVE1_CLOSE" class="0">
+<net name="VALVE1_DIR" class="0">
 <segment>
 <wire x1="238.76" y1="109.22" x2="231.14" y2="109.22" width="0.1524" layer="91"/>
 <label x="211.582" y="108.204" size="1.778" layer="95"/>
@@ -14709,7 +14709,7 @@ www.irf.com&lt;p&gt;
 <wire x1="213.36" y1="157.48" x2="218.44" y2="157.48" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="VALVE2_OPEN" class="0">
+<net name="VALVE2_POWER" class="0">
 <segment>
 <label x="363.728" y="182.118" size="1.778" layer="95"/>
 <pinref part="TBD2" gate="G$1" pin="18"/>
@@ -14721,7 +14721,7 @@ www.irf.com&lt;p&gt;
 <pinref part="X2" gate="G$1" pin="8"/>
 </segment>
 </net>
-<net name="VALVE2_CLOSE" class="0">
+<net name="VALVE2_DIR" class="0">
 <segment>
 <label x="363.728" y="179.578" size="1.778" layer="95"/>
 <pinref part="TBD2" gate="G$1" pin="17"/>
@@ -15085,9 +15085,9 @@ www.irf.com&lt;p&gt;
 <wire x1="127" y1="121.92" x2="127" y2="172.72" width="0.1524" layer="91"/>
 <pinref part="U1" gate="G$1" pin="0"/>
 <wire x1="127" y1="172.72" x2="144.78" y2="172.72" width="0.1524" layer="91"/>
-<pinref part="TBD2" gate="G$1" pin="6"/>
-<wire x1="309.88" y1="170.18" x2="294.64" y2="170.18" width="0.1524" layer="91"/>
-<wire x1="294.64" y1="170.18" x2="294.64" y2="121.92" width="0.1524" layer="91"/>
+<wire x1="294.64" y1="175.26" x2="294.64" y2="121.92" width="0.1524" layer="91"/>
+<pinref part="TBD2" gate="G$1" pin="4"/>
+<wire x1="294.64" y1="175.26" x2="309.88" y2="175.26" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="D1" class="0">
@@ -15107,9 +15107,9 @@ www.irf.com&lt;p&gt;
 <wire x1="132.08" y1="127" x2="132.08" y2="167.64" width="0.1524" layer="91"/>
 <pinref part="U1" gate="G$1" pin="2"/>
 <wire x1="132.08" y1="167.64" x2="144.78" y2="167.64" width="0.1524" layer="91"/>
-<pinref part="TBD2" gate="G$1" pin="4"/>
-<wire x1="309.88" y1="175.26" x2="289.56" y2="175.26" width="0.1524" layer="91"/>
-<wire x1="289.56" y1="175.26" x2="289.56" y2="127" width="0.1524" layer="91"/>
+<wire x1="289.56" y1="127" x2="289.56" y2="170.18" width="0.1524" layer="91"/>
+<pinref part="TBD2" gate="G$1" pin="6"/>
+<wire x1="289.56" y1="170.18" x2="309.88" y2="170.18" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="PUMP_PAUSE_LED" class="0">
