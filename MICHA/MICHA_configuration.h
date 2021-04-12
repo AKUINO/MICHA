@@ -36,8 +36,6 @@
 #define POMPE_TAUX_PATINAGE_REG 0x12   // taux d'erreur patinage
 
 
-
-
 // assignation des pins au hardware
 #define THERMI1_PIN           A0         // pin thermistance 1
 #define THERMI2_PIN           A1         // pin thermistance 2

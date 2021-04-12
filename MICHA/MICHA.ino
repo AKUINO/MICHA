@@ -72,7 +72,7 @@
 #include "MICHA_configuration.h"    // configuration des registres et assignations des pins
 
 // pour stockage en mémoire flash de l'ID
-typedef struct StructID
+struct StructID
 {
   boolean init;                   // mise à 1 quand la structure a été initialiser une première fois
   int8_t id;                      // id de la carte sur le réseau modbus
@@ -89,6 +89,7 @@ int8_t vitesse_flag = 0;
 
 // variables diverses
 uint32_t tps_ref = 0;             // temps de référence (pour la fréquence de mesure des thermistances)
+uint32_t tps_ref2 = 0;            // temps de référence (pour les autres opérations de gestion)
 int8_t id_origine;                // id de la carte initiale
 StructID id;                      // stocke id pour mémoire flash
 
@@ -222,13 +223,33 @@ void setup()
   }
 }
 
+uint32_t flip, flop = 0;
+boolean currServo = false;
+
 void loop() {
+  // Interrupts would be way better!
+  boolean highServo = HIGH == digitalRead(POMPE_S_PIN);
+  if (currServo) {
+    if (!highServo) {
+      flop++;
+      currServo = false;
+    }
+  } else {
+    if (highServo) {
+      flip++;
+      currServo = true;
+    }    
+  }
+
   //variable pour la gestion de la fréquence de mesure des thermistances
   uint32_t tps = millis();
   uint32_t intervalle = tps - tps_ref;
-  
-  //scrute commande du maitre
-  ModbusRTUServer.poll();
+  uint32_t intervalle2 = tps - tps_ref2;
+
+  if (intervalle2 > 50) {
+    //scrute commande du maitre
+    ModbusRTUServer.poll();
+  }
     
   // lecture des entrées (thermistances et signaux de la pompe) chaque seconde et mise à jour des registres correspondant
   if(intervalle>1000)  //si 1 sec écoulée
@@ -239,16 +260,19 @@ void loop() {
     Serial.println(id.id);
     
     lecture_thermi();
-    lecture_signauxPompe();
+    lecture_signauxPompe(flip,flop);
+    flip = flop = 0;
     tps_ref = tps;
   }
 
-  gestion_id();
-  gestion_pompe();
-  gestion_cuves();
-  gestion_vannes();
+  if (intervalle2 > 50) {
+    gestion_id();
+    gestion_pompe();
+    gestion_cuves();
+    gestion_vannes();
 
-  delay(50);
+    tps_ref2 = tps;
+  }
 }
 
 // met à jour les sorties dédiées aux vannes et aux solénoides en fonction des valeurs des registres (uniquement si modifiées)
@@ -446,11 +470,11 @@ void gestion_pompe()
 
 
 
-void lecture_signauxPompe()
+void lecture_signauxPompe(uint32_t flip, uint32_t flop)
 {
-  uint32_t pompe_e_us = pulseIn(POMPE_E_PIN,HIGH,16); // retourne la durée de l'impulsion HAUTE PWM en µs (attend l'impulsion pendant 16 µs)
+  ModbusRTUServer.inputRegisterWrite(POMPE_S_REG, flip > flop ? flip : flop);
   
-  ModbusRTUServer.inputRegisterWrite(POMPE_S_REG,digitalRead(POMPE_S_PIN));
+  uint32_t pompe_e_us = pulseIn(POMPE_E_PIN,HIGH,16); // retourne la durée de l'impulsion HAUTE PWM en µs (attend l'impulsion pendant 16 µs)  
   ModbusRTUServer.inputRegisterWrite(POMPE_E_REG,pompe_e_us);
 }
 

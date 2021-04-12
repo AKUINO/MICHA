@@ -9,9 +9,19 @@ import traceback
 from serial import Serial, PARITY_NONE
 from umodbus.client.serial import rtu
 
+SLAVE_ID = 1
+
+VOLTAGE_REF = 2.497 # value of the excitement voltage reference
+R_DIVBRIDGE = 1998 # value of the divider bridge resistor (top resistor)
+R_TRANSISTOR = 2 # value of the conduction resistance of the transistor
+THERMI_BETA = 3694 # from datasheet
+THERMI_T25 = 10000 # value of the thermistor at 25°C
+THERMI_WIRE = 0.6 # value of the twin wire resistor
+
 
 # Registre configuration
 # coils
+BOOT_FLAG_REG = 0x00 # register which stores the boot state
 #THERMIS_POW_REG = 0x01 # register which stores the thermistor power state
 PUMP_DIR_REG = 0x10 # register which stores the pump direction
 PUMP_POW_REG = 0x11 # register which stores the pump power state
@@ -41,6 +51,7 @@ PUMP_SPEED_REG = 0x10   # register which stores the pump speed
 # Class to manage the MICHA board
 class Micha:
     def __init__(self):
+        self.boot_flag = 1
         self.thermi = 0
         self.pump_speed = 0
         self.pump_dir = 0
@@ -55,23 +66,53 @@ class Micha:
         self.valve2_dir = 0
         self.general_state = 0
         self.error_code = 0
-        
-    def get_thermi(self, th=0):
+    
+    def get_boot_flag(self): # to get the boot state
+        try:
+            serial_port = get_serial_port()
+            
+            message = rtu.read_coils(SLAVE_ID, BOOT_FLAG_REG, 1)
+            response = rtu.send_message(message, serial_port)
+            self.boot_flag = response[0]
+            
+            serial_port.close()
+        except:
+            traceback.print_exc()
+            
+        return self.boot_flag
+    
+    def set_boot_flag(self,flag=0): # to set the boot state
+        if self.boot_flag != flag:
+            self.boot_flag = flag
+            
+            try:
+                serial_port = get_serial_port()
+                
+                message = rtu.write_single_coil(SLAVE_ID, BOOT_FLAG_REG, flag)
+                response = rtu.send_message(message, serial_port)
+                
+                serial_port.close()
+            except:
+                traceback.print_exc()
+            return response
+        return 0
+    
+    def get_thermi(self, th=0): # to get the thermistor value, returns the thermistor value
         self.thermi = th
         
         try:
             serial_port = get_serial_port()
             
             if self.thermi==0: # get the value of all the thermistors
-                message = rtu.read_input_registers(1, THERMI1_REG, 4)
+                message = rtu.read_input_registers(SLAVE_ID, THERMI1_REG, 4)
             elif self.thermi==1: # get the thermistor 1 value
-                message = rtu.read_input_registers(1, THERMI1_REG, 1)
+                message = rtu.read_input_registers(SLAVE_ID, THERMI1_REG, 1)
             elif self.thermi==2: # get the thermistor 2 value
-                message = rtu.read_input_registers(1, THERMI2_REG, 1)
+                message = rtu.read_input_registers(SLAVE_ID, THERMI2_REG, 1)
             elif self.thermi==3: # get the thermistor 3 value
-                message = rtu.read_input_registers(1, THERMI3_REG, 1)
+                message = rtu.read_input_registers(SLAVE_ID, THERMI3_REG, 1)
             elif self.thermi==4: # get the thermistor 4 value
-                message = rtu.read_input_registers(1, THERMI4_REG, 1)
+                message = rtu.read_input_registers(SLAVE_ID, THERMI4_REG, 1)
             else:
                 print("ERROR: no thermistor was found at this value")
             
@@ -90,7 +131,7 @@ class Micha:
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, PUMP_POW_REG, power)
+                message = rtu.write_single_coil(SLAVE_ID, PUMP_POW_REG, power)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -106,7 +147,7 @@ class Micha:
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_register(1, PUMP_SPEED_REG, speed)
+                message = rtu.write_single_register(SLAVE_ID, PUMP_SPEED_REG, speed)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -122,7 +163,7 @@ class Micha:
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, PUMP_DIR_REG, dir)
+                message = rtu.write_single_coil(SLAVE_ID, PUMP_DIR_REG, dir)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -132,11 +173,11 @@ class Micha:
             return response
         return 0
     
-    def get_pump_power(self): # to get the power state of the pump (stored in the register)
+    def get_pump_power(self): # to get the power state of the pump (stored in the register), returns the pump power state
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, PUMP_POW_REG, 1)
+            message = rtu.read_coils(SLAVE_ID, PUMP_POW_REG, 1)
             response = rtu.send_message(message, serial_port)
             self.pump_power = response[0]
             
@@ -146,11 +187,11 @@ class Micha:
             
         return self.pump_power
     
-    def get_pump_dir(self): # to get the direction state of the pump (stored in the register)
+    def get_pump_dir(self): # to get the direction state of the pump (stored in the register), returns the pump direction value
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, PUMP_DIR_REG, 1)
+            message = rtu.read_coils(SLAVE_ID, PUMP_DIR_REG, 1)
             response = rtu.send_message(message, serial_port)
             self.pump_dir = response[0]
             
@@ -160,11 +201,11 @@ class Micha:
             
         return self.pump_dir
     
-    def get_pump_speed(self): # to get the speed of the pump (stored in the register)
+    def get_pump_speed(self): # to get the speed of the pump (stored in the register), returns the pump speed
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_holding_registers(1, PUMP_SPEED_REG, 1)
+            message = rtu.read_holding_registers(SLAVE_ID, PUMP_SPEED_REG, 1)
             response = rtu.send_message(message, serial_port)
             self.pump_speed = response[0]
             
@@ -174,11 +215,11 @@ class Micha:
             
         return self.pump_speed
     
-    def get_pump_error(self): # to get the error code returned by the pump regulator
+    def get_pump_error(self): # to get the error code returned by the pump regulator, returns the pump error code
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_input_registers(1, PUMP_ERR_REG, 1)
+            message = rtu.read_input_registers(SLAVE_ID, PUMP_ERR_REG, 1)
             response = rtu.send_message(message, serial_port)
             
             serial_port.close()
@@ -191,7 +232,7 @@ class Micha:
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_input_registers(1, PUMP_SERVO_REG, 1)
+            message = rtu.read_input_registers(SLAVE_ID, PUMP_SERVO_REG, 1)
             response = rtu.send_message(message, serial_port)
             
             serial_port.close()
@@ -207,7 +248,7 @@ class Micha:
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, TANK1_REG, state)
+                message = rtu.write_single_coil(SLAVE_ID, TANK1_REG, state)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -223,7 +264,7 @@ class Micha:
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, TANK2_REG, state)
+                message = rtu.write_single_coil(SLAVE_ID, TANK2_REG, state)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -236,7 +277,7 @@ class Micha:
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, TANK1_REG, 1)
+            message = rtu.read_coils(SLAVE_ID, TANK1_REG, 1)
             response = rtu.send_message(message, serial_port)
             self.tank1 = response[0]
             
@@ -250,7 +291,7 @@ class Micha:
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, TANK2_REG, 1)
+            message = rtu.read_coils(SLAVE_ID, TANK2_REG, 1)
             response = rtu.send_message(message, serial_port)
             self.tank2 = response[0]
             
@@ -267,7 +308,7 @@ class Micha:
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, SOL_HOT_REG, state)
+                message = rtu.write_single_coil(SLAVE_ID, SOL_HOT_REG, state)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -283,7 +324,7 @@ class Micha:
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, SOL_COLD_REG, state)
+                message = rtu.write_single_coil(SLAVE_ID, SOL_COLD_REG, state)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -296,7 +337,7 @@ class Micha:
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, SOL_HOT_REG, 1)
+            message = rtu.read_coils(SLAVE_ID, SOL_HOT_REG, 1)
             response = rtu.send_message(message, serial_port)
             self.sol_hot = response[0]
             
@@ -310,7 +351,7 @@ class Micha:
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, SOL_COLD_REG, 1)
+            message = rtu.read_coils(SLAVE_ID, SOL_COLD_REG, 1)
             response = rtu.send_message(message, serial_port)
             self.sol_cold = response[0]
             
@@ -327,7 +368,7 @@ class Micha:
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, VALVE1_POW_REG, power)
+                message = rtu.write_single_coil(SLAVE_ID, VALVE1_POW_REG, power)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -343,7 +384,7 @@ class Micha:
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, VALVE2_POW_REG, power)
+                message = rtu.write_single_coil(SLAVE_ID, VALVE2_POW_REG, power)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -356,7 +397,7 @@ class Micha:
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, VALVE1_POW_REG, 1)
+            message = rtu.read_coils(SLAVE_ID, VALVE1_POW_REG, 1)
             response = rtu.send_message(message, serial_port)
             self.valve1_power = response[0]
             
@@ -370,7 +411,7 @@ class Micha:
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, VALVE2_POW_REG, 1)
+            message = rtu.read_coils(SLAVE_ID, VALVE2_POW_REG, 1)
             response = rtu.send_message(message, serial_port)
             self.valve2_power= response[0]
             
@@ -387,7 +428,7 @@ class Micha:
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, VALVE1_DIR_REG, dir)
+                message = rtu.write_single_coil(SLAVE_ID, VALVE1_DIR_REG, dir)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -403,7 +444,7 @@ class Micha:
             try:
                 serial_port = get_serial_port()
                 
-                message = rtu.write_single_coil(1, VALVE2_DIR_REG, dir)
+                message = rtu.write_single_coil(SLAVE_ID, VALVE2_DIR_REG, dir)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -416,7 +457,7 @@ class Micha:
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, VALVE1_DIR_REG, 1)
+            message = rtu.read_coils(SLAVE_ID, VALVE1_DIR_REG, 1)
             response = rtu.send_message(message, serial_port)
             self.valve1_dir = response[0]
             
@@ -430,7 +471,7 @@ class Micha:
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_coils(1, VALVE2_DIR_REG, 1)
+            message = rtu.read_coils(SLAVE_ID, VALVE2_DIR_REG, 1)
             response = rtu.send_message(message, serial_port)
             self.valve2_dir= response[0]
             
@@ -444,7 +485,7 @@ class Micha:
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_input_registers(1, GEN_STATE_REG, 4)
+            message = rtu.read_input_registers(SLAVE_ID, GEN_STATE_REG, 4)
             response = rtu.send_message(message, serial_port)
             self.general_state= response[0]
             
@@ -458,7 +499,7 @@ class Micha:
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_input_registers(1, ERROR_CODE_REG, 4)
+            message = rtu.read_input_registers(SLAVE_ID, ERROR_CODE_REG, 4)
             response = rtu.send_message(message, serial_port)
             self.error_code= response[0]
             
@@ -477,11 +518,20 @@ if __name__ == "__main__":
         
         return port
     
+    def boot_monitoring():
+        if pasto.get_boot_flag():
+            print("\n\nTHE DEVICE HAS REBOOTED!")
+            pasto.set_boot_flag()
+        
+        return 0
+    
     def menu_choice(mini,maxi):
         choice = '-1'
         
         while (int(choice)<mini or int(choice)>maxi):
             choice = input("Choose an option: ")
+            
+            boot_monitoring()
                 
             if (int(choice)<mini or int(choice)>maxi):
                 print("ERROR: incorrect choice. Your choice must be [{}:{}]".format(mini,maxi))
@@ -507,18 +557,28 @@ if __name__ == "__main__":
             
             # If the choice is valid
             if choice!='0':
+                thermi1 = pasto.get_thermi(1)[0]
+                thermi2 = pasto.get_thermi(2)[0]
+                thermi3 = pasto.get_thermi(3)[0]
+                thermi4 = pasto.get_thermi(4)[0]
+                
+                thermi1_mV = (VOLTAGE_REF*thermi1/4096)*1000
+                thermi2_mV = (VOLTAGE_REF*thermi2/4096)*1000
+                thermi3_mV = (VOLTAGE_REF*thermi3/4096)*1000
+                thermi4_mV = (VOLTAGE_REF*thermi4/4096)*1000
+                
                 if choice=='1':
-                    print("Thermistor 1 = {}".format(pasto.get_thermi(1)[0]))
+                    print("Thermistor 1 = {} ({:4.3f} mV)".format(thermi1,thermi1_mV))
                 elif choice=='2':
-                    print("Thermistor 2 = {}".format(pasto.get_thermi(2)[0]))
+                    print("Thermistor 2 = {} ({:4.3f} mV)".format(thermi2,thermi2_mV))
                 elif choice=='3':
-                    print("Thermistor 3 = {}".format(pasto.get_thermi(3)[0]))
+                    print("Thermistor 3 = {} ({:4.3f} mV)".format(thermi3,thermi3_mV))
                 elif choice=='4':
-                    print("Thermistor 4 = {}".format(pasto.get_thermi(4)[0]))
+                    print("Thermistor 4 = {} ({:4.3f} mV)".format(thermi4,thermi4_mV))
                 elif choice=='5':
                     i = 1
                     for value in pasto.get_thermi():
-                        print("Thermistor {} = {}".format(i,value))
+                        print("Thermistor {} = {} ({:4.3f} mV)".format(i,value,(VOLTAGE_REF*value/4096)*1000))
                         i+=1
                 
                 input()
@@ -852,7 +912,12 @@ if __name__ == "__main__":
 
     def subMenu_registers():
         """Display the value of all the registers."""
+        
         print("########## Registers ##########")
+        # State
+        print("Boot state flag \t= {}".format(pasto.get_boot_flag()))
+        print("General state \t= {}".format(pasto.get_general_state()))
+        print("Error code \t= {}".format(pasto.get_error_code()))
         # Thermistors
         i = 1
         for value in pasto.get_thermi():
@@ -901,4 +966,5 @@ if __name__ == "__main__":
             choice = '-1' 
 
     print("\nBye!\n")
+
 
