@@ -11,8 +11,11 @@
 // WARNING: please verify the output states match with your hardware states (is it the same logic?)
 //
 // Version notes:
+//  - v1.1.2:
+//          - reading and decoding the pump error signal implemented (writing in register not yet implemented)
+//          - loop section reorganized
 //  - v1.1.1:
-//          - reading of the servo signal updated (tested)
+//          - reading the servo signal updated (tested)
 //  - v1.1.0:
 //          - reset detection implemented (BOD12, BOD33 and WDT) :
 //              - add BOOT_FLAG_REG
@@ -92,9 +95,14 @@ boolean speed_flag = 0;
 // variables diverses
 uint32_t time_ref1 = 0;           // thermistor reading reference time
 uint32_t time_ref2 = 0;           // reference time for other operations
+uint32_t time_ref3 = 0;           // reference time for pump error signal reading
+uint32_t time_ref4 = 0;           // reference time for full pump error signal
 StructID id;                      // stores the ID for the flash memory
 uint32_t flip, flop = 0;
 boolean currServo = false;
+uint8_t pump_err_count = 0;       // to store the pulse number count (pump error signal)
+boolean pump_err_flag = false;    // indicates if a pump erro is occuring
+boolean pump_err_prevState = 0;   // previous state of the pump error signal
 
 
 void setup()
@@ -150,8 +158,8 @@ void setup()
   pinMode(THERMIS_POW_PIN,OUTPUT);
 
   // Default assignment of outputs
-  digitalWrite(PUMP_SPEED_PIN,LOW);           // -----TEMPORAIRE-----
-  digitalWrite(PUMP_DIR_PIN,LOW);             // pump direction on 0
+  digitalWrite(PUMP_SPEED_PIN,LOW);           // default pump speed pin on 0
+  digitalWrite(PUMP_DIR_PIN,LOW);             // pump direction pin on 0
   digitalWrite(PUMP_POW_PIN,LOW);             // pump power OFF
   digitalWrite(TANK1_PIN,LOW);                // tank 1 OFF
   digitalWrite(TANK2_PIN,LOW);                // tank 2 OFF
@@ -227,8 +235,15 @@ void setup()
 }
 
 void loop() {
-  // Interrupts would be way better!
-  boolean highServo = HIGH == digitalRead(PUMP_SPEED_PIN);
+  // Declaration and assignment of time variables
+  uint32_t tps = millis();
+  uint32_t interval1 = tps - time_ref1;    // for 1 s interval
+  uint32_t interval2 = tps - time_ref2;   // for 50 ms interval
+  uint32_t interval3 = tps - time_ref3;   // for 70 ms interval
+  uint32_t interval4 = tps - time_ref4;   // for 1.8 s interval
+
+  // Other variables
+  boolean highServo = HIGH == digitalRead(PUMP_SPEED_PIN);  // reading the pump servo signal (interrupts would be way better!)
   
   if (currServo) {
     if (!highServo) {
@@ -242,18 +257,9 @@ void loop() {
     }    
   }
 
-  // declaration and assignment of time variables to manage the thermistor reading frequency
-  uint32_t tps = millis();
-  uint32_t interval = tps - time_ref1;
-  uint32_t interval2 = tps - time_ref2;
-
-  if (interval2 > 50) {
-    //scanning a command coming from the master
-    ModbusRTUServer.poll();
-  }
+  poll_pumpError(tps,interval3,interval4);  // polls the pump error pin
     
-  // This part is execute every 1 seconde
-  if(interval>1000)
+  if(interval1>1000) // 1 s passed
   {
     // To display the modbus ID when debugging (if it has just been modified, this is display but a reboot is necessary to use this new ID)
     Serial.print("\n");
@@ -266,13 +272,93 @@ void loop() {
     time_ref1 = tps;
   }
 
-  if (interval2 > 50) {
+  if (interval2 > 50) // 50 ms passed
+  {
+    ModbusRTUServer.poll(); // scans if a command is coming from the master
+    
     manage_id();
     manage_pump();
     manage_tanks();
     manage_valves();
 
     time_ref2 = tps;
+  }
+}
+
+// Polls the pump error pin
+void poll_pumpError(uint32_t tps, uint32_t interval3, uint32_t interval4)
+{
+  boolean pump_err_state = digitalRead(PUMP_ERR_PIN);  // reading the pump error signal
+  static uint32_t time_pump_err_ledOn = 0;  // stores the light length of time of the pump error led
+  static boolean timeFlag_ledOn = true; // indicates when stop the light time measure of pump error led
+
+  // Reading the pump error signal
+  if(pump_err_state!=pump_err_prevState)  // when no error the pump error signal is LOW, otherwise HIGH
+  {
+    pump_err_prevState = pump_err_state;
+
+    if(pump_err_state)
+    { 
+      if(pump_err_flag==false)  // if beginning of the pump error code flow, initialization of the timers and the counter
+      {
+        interval4 = 0;
+        time_ref4 = tps;
+        pump_err_count = 1;
+        timeFlag_ledOn = true;
+      }else
+      {
+        pump_err_count++;
+      }
+
+      time_ref3 = tps;
+      pump_err_flag = true;
+    }else
+    {
+      if(timeFlag_ledOn)
+      {
+        time_pump_err_ledOn = interval3;
+        timeFlag_ledOn = false;
+      }
+    }
+  }
+
+  if(pump_err_flag && (interval4 > 1700))  // a pump error is occuring and 1.8 s passed (period of a full pump error signal)
+  {
+    switch(pump_err_count)
+    {
+      case 2:
+        if(time_pump_err_ledOn < 105)
+        {
+          Serial.println("Out of tolerance (2 fast pulses)");
+        }else
+        {
+          Serial.println("AD Midpoint sampling abnormal (2 slow pulses)");
+        }
+        break;
+      case 3:
+        Serial.println("Motor wire or encoder wire is not connected (3 slow pulses)");
+        break;
+      case 4:
+        if(time_pump_err_ledOn < 105)
+        {
+          Serial.println("The motor is overloaded for a long time (4 fast pulses)");
+        }else
+        {
+          Serial.println("Undervoltage - voltage<20V (4 slow pulses)");
+        }
+        break;
+      case 5:
+        Serial.println("Overvoltage - voltage>90V (5 slow pulses)");
+        break;
+      default:
+        Serial.println("Pump error other");
+        break;
+    }
+
+    pump_err_count = 0;
+    pump_err_flag = false;
+    time_ref3 = tps;
+    time_ref4 = tps;
   }
 }
 
