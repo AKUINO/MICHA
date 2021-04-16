@@ -627,8 +627,8 @@ if __name__ == "__main__":
                     elif choice=='1':
                         pasto.set_pump_power(1)
                         print("Power ON")
-                    input()
-                elif choice=='2':
+                    choice = '1'
+                if choice=='2':
                     while choice!='0':
                         print("### Speed ###")
                         print("\nCurrent speed = {}\n".format(pasto.get_pump_speed()))
@@ -642,7 +642,8 @@ if __name__ == "__main__":
                             updatedSpeed = input("Enter a new speed: ")
                             pasto.set_pump_speed(int(updatedSpeed))
                             choice = '-1'
-                elif choice=='3':
+                    choice = '4'
+                if choice=='3':
                     print("### Direction ###")
                     
                     if pasto.get_pump_dir()==0:
@@ -661,22 +662,30 @@ if __name__ == "__main__":
                     elif choice=='1':
                         pasto.set_pump_dir(1)
                         print("Backflow mode ON")
-                    input()
-                elif choice=='4':
+                    choice = '2'
+                if choice=='4':
+                    cursp = pasto.get_pump_speed()
                     spmin = 99999999
                     spmax = 0
                     spavg = 0
-                    for i in range(0,10):
+                    spvar = 0
+                    for i in range(0,50):
                         sp = pasto.get_pump_servo();
-                        print("Speed returned by the servo = {}".format(sp))
+                        print("Ticks from the servo = {}".format(sp))
                         spmin = sp if sp < spmin else spmin
                         spmax = sp if sp > spmax else spmax
                         spavg += sp
-                        time.sleep(0.250)
-                    print ("Min=%f0, Max=%f0, Avg=%f0 Hz" % (spmin*4*6.666,spmax*4*6.666, spavg*4*0.6666) )
-                elif choice=='5':
+                        spvar += (sp*sp)
+                        time.sleep(0.050)
+                    spmin = int(spmin*20*6.4)
+                    spmax = int(spmax*20*6.4)
+                    spavg = int(spavg*20*6.4/50)
+                    stress = (((spvar*400*6.4*6.4)-(spavg*spavg))/2500)**0.5
+                    print ("Min=%d, Max=%d, Avg=%d Hz, Var²=%f" % (spmin,spmax, spavg, stress) )
+                    if cursp:
+                        print ("Min=%f1%%, Max=%f1%%, Avg=%f1%%, stress=%f1%%" % (spmin*100.0/cursp-100.0,spmax*100.0/cursp-100.0, spavg*100.0/cursp-100.0, 100.0*stress/cursp ) )
+                if choice=='5':
                     print("Error returned by the regulator = {}".format(pasto.get_pump_error()))
-                    input()
                 
                 choice= '-1'
         

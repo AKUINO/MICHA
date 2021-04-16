@@ -78,6 +78,8 @@
 
 // With DEBUG false, less Serial.print, better timing...
 #define DEBUG false
+// Interruption are supported on pins D0,1,4,5,6,7,8,9 A1,2
+#undef INTERRUPTIBLE
 
 // To store the ID in the flash memory
 struct StructID
@@ -102,12 +104,27 @@ uint32_t time_ref3 = 0;           // last millis when storing pump servo count
 uint32_t time_ref_ledOn = 0;      // reference time for pump error signal reading
 uint32_t time_ref4 = 0;           // reference time for full pump error signal
 StructID id;                      // stores the ID for the flash memory
-uint32_t flip, flop = 0;
+#ifdef INTERRUPTIBLE
+uint32_t volatile flip = 0;
+#else
+uint32_t flip,flop = 0;
+#endif
 boolean currServo = false;
 uint8_t pump_err_count = 0;       // to store the pulse number count (pump error signal)
 boolean pump_err_flag = false;    // indicates if a pump erro is occuring
 boolean pump_err_prevState = 0;   // previous state of the pump error signal
 
+#ifdef INTERRUPTIBLE
+long volatile precFlip = 0;
+
+void flipInterrupt() {
+  long now = micros();
+  if ( (now-precFlip) > 90 ) {
+    flip++;
+    precFlip = now;
+  }
+}
+#endif
 
 void setup()
 {
@@ -145,6 +162,9 @@ void setup()
   pinMode(THERMI4_PIN,INPUT);
   pinMode(PUMP_ERR_PIN,INPUT);
   pinMode(PUMP_SERVO_PIN,INPUT_PULLUP);
+#ifdef INTERRUPT
+  attachInterrupt(digitalPinToInterrupt(PUMP_SERVO_PIN),flipInterrupt,LOW);
+#endif
   
   // Output pin configuration
   pinMode(PUMP_SPEED_PIN,OUTPUT);
@@ -237,7 +257,10 @@ void setup()
   }
 }
 
+#ifdef INTERRUPTIBLE
+#else
 void flipFlopRead() {
+
   boolean highServo = HIGH == digitalRead(PUMP_SERVO_PIN);  // reading the pump servo signal (interrupts would be way better!)
   
   if (currServo) {
@@ -252,12 +275,17 @@ void flipFlopRead() {
     }    
   }
 }
+#endif
 
 void flipFlopDelay (int milliSeconds) {
+#ifdef INTERRUPTIBLE
+  delay(milliSeconds);
+#else
   uint32_t time_ref = millis();
   do {
     flipFlopRead();
   } while ( (millis()-time_ref) < milliSeconds );
+#endif
 }
 
 void loop() {
@@ -269,7 +297,10 @@ void loop() {
   uint32_t interval4 = tps - time_ref4;               // for 1.8 s interval
   uint32_t pump_error_ledOn = tps - time_ref_ledOn;   // to compute the led light time of the pump error code
 
+#ifdef INTERRUPTIBLE
+#else
   flipFlopRead();
+#endif
     
   if(interval1>1000) // 1 s passed
   {
@@ -284,10 +315,12 @@ void loop() {
     time_ref1 = tps;
   }
 
-  if(interval3>250) // 1/4 s passed
+  if(interval3>50) // 1/20 s passed
   {
-    ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_REG, flip > flop ? flip : flop);
-    flip = flop = 0;
+    //ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_REG, flip > flop ? flip : flop);
+    //flip = flop = 0;
+    ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_REG, flip);
+    flip = 0;
     time_ref3 = tps;
   }
 
