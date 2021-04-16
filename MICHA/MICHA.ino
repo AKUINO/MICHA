@@ -141,7 +141,7 @@ void setup()
   pinMode(THERMI3_PIN,INPUT);
   pinMode(THERMI4_PIN,INPUT);
   pinMode(PUMP_ERR_PIN,INPUT);
-  pinMode(PUMP_SPEED_PIN,INPUT);
+  pinMode(PUMP_SERVO_PIN,INPUT_PULLUP);
   
   // Output pin configuration
   pinMode(PUMP_SPEED_PIN,OUTPUT);
@@ -243,7 +243,7 @@ void loop() {
   uint32_t interval4 = tps - time_ref4;   // for 1.8 s interval
 
   // Other variables
-  boolean highServo = HIGH == digitalRead(PUMP_SPEED_PIN);  // reading the pump servo signal (interrupts would be way better!)
+  boolean highServo = HIGH == digitalRead(PUMP_SERVO_PIN);  // reading the pump servo signal (interrupts would be way better!)
   
   if (currServo) {
     if (!highServo) {

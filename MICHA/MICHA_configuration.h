@@ -43,7 +43,7 @@
 #define THERMI4_PIN           A3         // thermistor 4 pin
 #define THERMIS_POW_PIN       21         // thermistor power pin
 #define PUMP_ERR_PIN          19         // pump error signal pin
-#define PUMP_SPEED_PIN        20         // pump servo signal pin
+#define PUMP_SERVO_PIN        20         // pump servo signal pin
 #define PUMP_POW_PIN          0          // pump power pin
 #define PUMP_DIR_PIN          1          // pump direction pin
 #define PUMP_SPEED_PIN        2          // pump speed pin
