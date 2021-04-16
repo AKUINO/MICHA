@@ -76,6 +76,9 @@
 #include <SAMD21turboPWM.h>
 #include "MICHA_configuration.h"    // register configuration and pin assignment file
 
+// With DEBUG false, less Serial.print, better timing...
+#define DEBUG false
+
 // To store the ID in the flash memory
 struct StructID
 {
@@ -95,6 +98,7 @@ boolean speed_flag = 0;
 // variables diverses
 uint32_t time_ref1 = 0;           // thermistor reading reference time
 uint32_t time_ref2 = 0;           // reference time for other operations
+uint32_t time_ref3 = 0;           // last millis when storing pump servo count
 uint32_t time_ref_ledOn = 0;      // reference time for pump error signal reading
 uint32_t time_ref4 = 0;           // reference time for full pump error signal
 StructID id;                      // stores the ID for the flash memory
@@ -121,15 +125,14 @@ void setup()
 
     ID_FLASH.write(id);   // writing in flash memory
 
+    delay(1000);  // Leave a small delay to start the Arduino Terminal window
     Serial.print("First start. The modbus ID is ");
-    Serial.println(id.id);
-    Serial.print("\n");
-  }else
+  } else
   {
     Serial.print("The modbus ID is ");
-    Serial.println(id.id);
-    Serial.print("\n");
   }
+  Serial.println(id.id);
+  Serial.print("\n");
   
   // Main configuration
   analogReadResolution(12);       // setting in 12 bit mode (10 bit mode by default)
@@ -234,15 +237,7 @@ void setup()
   }
 }
 
-void loop() {
-  // Declaration and assignment of time variables
-  uint32_t tps = millis();
-  uint32_t interval1 = tps - time_ref1;               // for 1 s interval
-  uint32_t interval2 = tps - time_ref2;               // for 35 ms interval 
-  uint32_t interval4 = tps - time_ref4;               // for 1.8 s interval
-  uint32_t pump_error_ledOn = tps - time_ref_ledOn;   // to compute the led light time of the pump error code
-
-  // Other variables
+void flipFlopRead() {
   boolean highServo = HIGH == digitalRead(PUMP_SERVO_PIN);  // reading the pump servo signal (interrupts would be way better!)
   
   if (currServo) {
@@ -256,18 +251,44 @@ void loop() {
       currServo = true;
     }    
   }
+}
+
+void flipFlopDelay (int milliSeconds) {
+  uint32_t time_ref = millis();
+  do {
+    flipFlopRead();
+  } while ( (millis()-time_ref) < milliSeconds );
+}
+
+void loop() {
+  // Declaration and assignment of time variables
+  uint32_t tps = millis();
+  uint32_t interval1 = tps - time_ref1;               // for 1 s interval
+  uint32_t interval2 = tps - time_ref2;               // for 35 ms interval 
+  uint32_t interval3 = tps - time_ref3;               // for 250 ms interval 
+  uint32_t interval4 = tps - time_ref4;               // for 1.8 s interval
+  uint32_t pump_error_ledOn = tps - time_ref_ledOn;   // to compute the led light time of the pump error code
+
+  flipFlopRead();
     
   if(interval1>1000) // 1 s passed
   {
     // To display the modbus ID when debugging (if it has just been modified, this is display but a reboot is necessary to use this new ID)
-    Serial.print("\n");
-    Serial.print("Slave ID = ");
-    Serial.println(id.id);
+    if (DEBUG) {
+      Serial.print("\n");
+      Serial.print("Slave ID = ");
+      Serial.println(id.id);
+    }
     
     get_thermis();
-    get_pumpSignals(flip,flop);
-    flip = flop = 0;
     time_ref1 = tps;
+  }
+
+  if(interval3>250) // 1/4 s passed
+  {
+    ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_REG, flip > flop ? flip : flop);
+    flip = flop = 0;
+    time_ref3 = tps;
   }
 
   if (interval2 > 35) // 35 ms passed
@@ -373,37 +394,49 @@ void manage_valves()
   
   if(digitalRead(SOL_HOT_PIN)!=sol_hot)
   {
-    Serial.println("Solenoid 1 state modified");
+    if (DEBUG) {
+      Serial.println("Solenoid 1 state modified");
+    }
     digitalWrite(SOL_HOT_PIN,sol_hot);
   }
 
   if(digitalRead(SOL_COLD_PIN)!=sol_cold)
   {
-    Serial.println("Solenoid 2 state modified");
+    if (DEBUG) {
+      Serial.println("Solenoid 2 state modified");
+    }
     digitalWrite(SOL_COLD_PIN,sol_cold);
   }
 
   if(digitalRead(VALVE1_POW_PIN)!=valve1_pow)
   {
-    Serial.println("Valve 1 power state modified");
+    if (DEBUG) {
+      Serial.println("Valve 1 power state modified");
+    }
     digitalWrite(VALVE1_POW_PIN,valve1_pow);
   }
 
   if(digitalRead(VALVE1_DIR_PIN)!=valve1_dir)
   {
-    Serial.println("Valve 1 direction state modified");
+    if (DEBUG) {
+      Serial.println("Valve 1 direction state modified");
+    }
     digitalWrite(VALVE1_DIR_PIN,valve1_dir);
   }
 
   if(digitalRead(VALVE2_POW_PIN)!=valve2_pow)
   {
-    Serial.println("Valve 2 power state modified");
+    if (DEBUG) {
+      Serial.println("Valve 2 power state modified");
+    }
     digitalWrite(VALVE2_POW_PIN,valve2_pow);
   }
 
   if(digitalRead(VALVE2_DIR_PIN)!=valve2_dir)
   {
-    Serial.println("Valve 2 direction state modified");
+    if (DEBUG) {
+      Serial.println("Valve 2 direction state modified");
+    }
     digitalWrite(VALVE2_DIR_PIN,valve2_dir);
   }
 }
@@ -416,13 +449,17 @@ void manage_tanks()
   
   if(digitalRead(TANK1_PIN)!=tank1)
   {
-    Serial.println("Tank 1 state modified");
+    if (DEBUG) {
+      Serial.println("Tank 1 state modified");
+    }
     digitalWrite(TANK1_PIN,tank1);
   }
 
   if(digitalRead(TANK2_PIN)!=tank2)
   {
-    Serial.println("Tank 2 state modified");
+    if (DEBUG) {
+      Serial.println("Tank 2 state modified");
+    }
     digitalWrite(TANK2_PIN,tank2);
   }
 }
@@ -437,7 +474,7 @@ void get_thermis()
   
   for(int8_t i=0;i<3;i++) // reading 3 values
   {
-    delay(10);
+    flipFlopDelay(10);
     
     thermis[0] = thermis[0] + analogRead(THERMI1_PIN);
     thermis[1] = thermis[1] + analogRead(THERMI2_PIN);
@@ -460,15 +497,17 @@ void get_thermis()
   ModbusRTUServer.inputRegisterWrite(THERMI4_REG,thermis[3]);
 
   // To debug
-  for (int8_t i=0;i<4;i++)
-  {
-    Serial.print("Thermi");
-    Serial.print(i+1);
-    Serial.print(" = ");
-    Serial.print(thermis[i]);
-    Serial.print("; ");
+  if (DEBUG) {
+    for (int8_t i=0;i<4;i++)
+    {
+      Serial.print("Thermi");
+      Serial.print(i+1);
+      Serial.print(" = ");
+      Serial.print(thermis[i]);
+      Serial.print("; ");
+    }
+    Serial.println("\n");
   }
-  Serial.println("\n");
 }
 
 // Updates the pump outputs when a register is modified
@@ -483,7 +522,9 @@ void manage_pump()
   
   if(pump_speed_prev!=pump_speed)
   {
-    Serial.println("Pump speed modified");
+    if (DEBUG) {
+      Serial.println("Pump speed modified");
+    }
 
     steps = calculSteps(pump_speed);
     speed_flag = 1;
@@ -543,24 +584,19 @@ void manage_pump()
 
   if(digitalRead(PUMP_DIR_PIN)!=pump_dir)
   {
-    Serial.println("Pump direction modified");
+    if (DEBUG) {
+      Serial.println("Pump direction modified");
+    }
     digitalWrite(PUMP_DIR_PIN,pump_dir);
   }
 
   if(digitalRead(PUMP_POW_PIN)!=pump_pow)
   {
-    Serial.println("Pump power modified");
+    if (DEBUG) {
+      Serial.println("Pump power modified");
+    }
     digitalWrite(PUMP_POW_PIN,pump_pow);
   }
-}
-
-// Updates the servo and error registers 
-void get_pumpSignals(uint32_t flip, uint32_t flop)
-{
-  ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_REG, flip > flop ? flip : flop);
-  
-  uint32_t pompe_e_us = pulseIn(PUMP_ERR_PIN,HIGH,16); // retourne la durée de l'impulsion HAUTE PWM en µs (attend l'impulsion pendant 16 µs)  
-  ModbusRTUServer.inputRegisterWrite(PUMP_ERR_REG,pompe_e_us);
 }
 
 // Updates the modbus ID in the flash memory only when modified in the register

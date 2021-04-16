@@ -8,6 +8,7 @@
 import traceback
 from serial import Serial, PARITY_NONE
 from umodbus.client.serial import rtu
+import time
 
 SLAVE_ID = 1
 
@@ -662,8 +663,17 @@ if __name__ == "__main__":
                         print("Backflow mode ON")
                     input()
                 elif choice=='4':
-                    print("Speed returned by the servo = {}".format(pasto.get_pump_servo()))
-                    input()
+                    spmin = 99999999
+                    spmax = 0
+                    spavg = 0
+                    for i in range(0,10):
+                        sp = pasto.get_pump_servo();
+                        print("Speed returned by the servo = {}".format(sp))
+                        spmin = sp if sp < spmin else spmin
+                        spmax = sp if sp > spmax else spmax
+                        spavg += sp
+                        time.sleep(0.250)
+                    print ("Min=%f0, Max=%f0, Avg=%f0 Hz" % (spmin*4*6.666,spmax*4*6.666, spavg*4*0.6666) )
                 elif choice=='5':
                     print("Error returned by the regulator = {}".format(pasto.get_pump_error()))
                     input()
