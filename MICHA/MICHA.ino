@@ -95,7 +95,7 @@ boolean speed_flag = 0;
 // variables diverses
 uint32_t time_ref1 = 0;           // thermistor reading reference time
 uint32_t time_ref2 = 0;           // reference time for other operations
-uint32_t time_ref3 = 0;           // reference time for pump error signal reading
+uint32_t time_ref_ledOn = 0;      // reference time for pump error signal reading
 uint32_t time_ref4 = 0;           // reference time for full pump error signal
 StructID id;                      // stores the ID for the flash memory
 uint32_t flip, flop = 0;
@@ -237,10 +237,10 @@ void setup()
 void loop() {
   // Declaration and assignment of time variables
   uint32_t tps = millis();
-  uint32_t interval1 = tps - time_ref1;    // for 1 s interval
-  uint32_t interval2 = tps - time_ref2;   // for 50 ms interval
-  uint32_t interval3 = tps - time_ref3;   // for 70 ms interval
-  uint32_t interval4 = tps - time_ref4;   // for 1.8 s interval
+  uint32_t interval1 = tps - time_ref1;               // for 1 s interval
+  uint32_t interval2 = tps - time_ref2;               // for 35 ms interval 
+  uint32_t interval4 = tps - time_ref4;               // for 1.8 s interval
+  uint32_t pump_error_ledOn = tps - time_ref_ledOn;   // to compute the led light time of the pump error code
 
   // Other variables
   boolean highServo = HIGH == digitalRead(PUMP_SERVO_PIN);  // reading the pump servo signal (interrupts would be way better!)
@@ -256,8 +256,6 @@ void loop() {
       currServo = true;
     }    
   }
-
-  poll_pumpError(tps,interval3,interval4);  // polls the pump error pin
     
   if(interval1>1000) // 1 s passed
   {
@@ -272,10 +270,11 @@ void loop() {
     time_ref1 = tps;
   }
 
-  if (interval2 > 50) // 50 ms passed
+  if (interval2 > 35) // 35 ms passed
   {
     ModbusRTUServer.poll(); // scans if a command is coming from the master
-    
+
+    poll_pumpError(tps,pump_error_ledOn,interval4);  // polls the pump error pin
     manage_id();
     manage_pump();
     manage_tanks();
@@ -286,7 +285,7 @@ void loop() {
 }
 
 // Polls the pump error pin
-void poll_pumpError(uint32_t tps, uint32_t interval3, uint32_t interval4)
+void poll_pumpError(uint32_t tps, uint32_t pump_error_ledOn, uint32_t interval4)
 {
   boolean pump_err_state = digitalRead(PUMP_ERR_PIN);  // reading the pump error signal
   static uint32_t time_pump_err_ledOn = 0;  // stores the light length of time of the pump error led
@@ -310,13 +309,13 @@ void poll_pumpError(uint32_t tps, uint32_t interval3, uint32_t interval4)
         pump_err_count++;
       }
 
-      time_ref3 = tps;
+      time_ref_ledOn = tps;
       pump_err_flag = true;
     }else
     {
       if(timeFlag_ledOn)
       {
-        time_pump_err_ledOn = interval3;
+        time_pump_err_ledOn = pump_error_ledOn;
         timeFlag_ledOn = false;
       }
     }
@@ -357,7 +356,7 @@ void poll_pumpError(uint32_t tps, uint32_t interval3, uint32_t interval4)
 
     pump_err_count = 0;
     pump_err_flag = false;
-    time_ref3 = tps;
+    time_ref_ledOn = tps;
     time_ref4 = tps;
   }
 }
