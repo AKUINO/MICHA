@@ -11,6 +11,8 @@
 // WARNING: please verify the output states match with your hardware states (is it the same logic?)
 //
 // Version notes:
+//  - v1.1.3:
+//          - registrer structure updated: the pump servo registers have been added/modified
 //  - v1.1.2:
 //          - reading and decoding the pump error signal implemented (writing in register not yet implemented)
 //          - loop section reorganized
@@ -111,7 +113,7 @@ uint32_t flip,flop = 0;
 #endif
 boolean currServo = false;
 uint8_t pump_err_count = 0;       // to store the pulse number count (pump error signal)
-boolean pump_err_flag = false;    // indicates if a pump erro is occuring
+boolean pump_err_flag = false;    // indicates if a pump error is occuring
 boolean pump_err_prevState = 0;   // previous state of the pump error signal
 
 #ifdef INTERRUPTIBLE
