@@ -13,9 +13,9 @@ void setup() {
 void loop() {
   digitalWrite(pin,HIGH);
   //digitalWrite(pin4,HIGH);
-  delayMicroseconds(50000);
+  delayMicroseconds(10000);
   digitalWrite(pin,LOW);
   //digitalWrite(pin4,LOW);
-  delayMicroseconds(50000);
+  delayMicroseconds(10000);
 
 }

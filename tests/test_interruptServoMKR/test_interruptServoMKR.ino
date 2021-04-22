@@ -1,15 +1,14 @@
 #define interruptPin A1
 
-volatile uint64_t pump_servoInterval = 0;  // to store the period of the pump servo signal
+volatile uint32_t pump_servoInterval = 0;  // to store the period of the pump servo signal
 uint32_t time_ref1 = 0;           // thermistor reading reference time
-volatile uint64_t time_ref5 = 0;  // reference time for pump servo signal
+volatile uint32_t time_ref5 = 0;  // reference time for pump servo signal
 volatile boolean pump_working_flag = false;    // indicates if the pump is working
 volatile uint16_t pump_servo_pulseCounter = 0;  // to store the pulse count of the pump servo signal
 volatile uint16_t pump_servo_periodMax = 0; // to store the period max of the pump servo signal
 volatile uint16_t pump_servo_periodMin = 65000; // to store the period min of the pump servo signal
-volatile uint16_t pump_servo_periodAvg = 0; // to store the period average of the pump servo signal
 volatile uint16_t pump_servo_periodStdDev = 0; // to store the period standard deviation of the pump servo signal
-volatile uint64_t pump_servo_periodTotal = 0;  // to store the total of period of the pump servo signal
+volatile uint32_t pump_servo_periodTotal = 0;  // to store the total of period of the pump servo signal
 
 
 void setup() {
@@ -42,7 +41,7 @@ void loop() {
 
 void int_ISR()
 {
-  uint64_t now = superMicros();  // updates the current time variable
+  uint32_t now = micros();  // updates the current time variable
 
   if( ! pump_working_flag )  // if the pump has just started, initialization of the timer and the counter
   {
@@ -50,10 +49,10 @@ void int_ISR()
     pump_servo_pulseCounter = 0;
     pump_servo_periodMin = 65000;
     pump_servo_periodMax = 0;
-    pump_servo_periodAvg = 0;
+    pump_servo_periodTotal = 0;
     pump_working_flag = true;
-  }
-
+  }else
+  {
     pump_servoInterval = now - time_ref5;
     time_ref5 = now;
     pump_servo_pulseCounter++;
@@ -67,6 +66,7 @@ void int_ISR()
     }
 
     pump_servo_periodTotal += pump_servoInterval;
+  }
 
 }
 
@@ -78,22 +78,4 @@ uint16_t average()
 uint16_t standardDeviation()
 {
   return 0;
-}
-
-// Returns the time in microseconds since the Arduino starting (on 64 bits)
-uint64_t superMicros()
-{
-  static uint32_t nbRollover = 0;
-  static uint32_t previousMicros = 0;
-  uint32_t currentMicros = micros();
-  
-  if (currentMicros < previousMicros) {
-     nbRollover++;
-  }
-  previousMicros = currentMicros;
-
-  uint64_t finalMicros = nbRollover;
-  finalMicros <<= 32;
-  finalMicros +=  currentMicros;
-  return finalMicros;
 }
