@@ -79,9 +79,9 @@
 #include "MICHA_configuration.h"    // register configuration and pin assignment file
 
 // With DEBUG false, less Serial.print, better timing...
-#define DEBUG false
+#define DEBUG true
 // Interruption are supported on pins D0,1,4,5,6,7,8,9 A1,2
-#undef INTERRUPTIBLE
+//#define INTERRUPTIBLE
 
 // To store the ID in the flash memory
 struct StructID
@@ -105,33 +105,79 @@ uint32_t time_ref2 = 0;           // reference time for other operations
 uint32_t time_ref3 = 0;           // last millis when storing pump servo count
 uint32_t time_ref_ledOn = 0;      // reference time for pump error signal reading
 uint32_t time_ref4 = 0;           // reference time for full pump error signal
+volatile uint32_t time_ref5 = 0;  // reference time for pump servo signal
+
 StructID id;                      // stores the ID for the flash memory
-#ifdef INTERRUPTIBLE
-uint32_t volatile flip = 0;
-#else
-uint32_t flip,flop = 0;
-#endif
+
+volatile boolean pump_working_flag = false;    // indicates if the pump is working
+volatile uint32_t pump_servoInterval = 0;  // to store the period of the pump servo signal
+volatile uint16_t pump_servo_pulseCounter = 0;  // to store the pulse count of the pump servo signal
+volatile uint16_t pump_servo_periodMax = 0; // to store the period max of the pump servo signal
+volatile uint16_t pump_servo_periodMin = 65000; // to store the period min of the pump servo signal
+volatile uint16_t pump_servo_periodStdDev = 0; // to store the period standard deviation of the pump servo signal
+volatile uint32_t pump_servo_periodTotal = 0;  // to store the total of period of the pump servo signal
+
+//#ifdef INTERRUPTIBLE
+//uint32_t volatile flip = 0;
+//#else
+//uint32_t flip,flop = 0;
+//#endif
+
 boolean currServo = false;
 uint8_t pump_err_count = 0;       // to store the pulse number count (pump error signal)
 boolean pump_err_flag = false;    // indicates if a pump error is occuring
 boolean pump_err_prevState = 0;   // previous state of the pump error signal
 
-#ifdef INTERRUPTIBLE
-long volatile precFlip = 0;
+uint16_t newSpeed = 0; // Last speed set by RPi
 
-void flipInterrupt() {
-  long now = micros();
-  if ( (now-precFlip) > 90 ) {
-    flip++;
-    precFlip = now;
+//#ifdef INTERRUPTIBLE
+//long volatile precFlip = 0;
+//
+//void flipInterrupt() {
+//  long now = micros();
+//  if ( (now-precFlip) > 90 ) {
+//    flip++;
+//    precFlip = now;
+//  }
+//}
+//#endif
+
+void int_ISR()
+{
+  uint32_t now = micros();  // updates the current time variable
+
+  if( ! pump_working_flag )  // if the pump has just started, initialization of the timer and the counter
+  {
+    pump_servo_pulseCounter = 0;
+    pump_servo_periodMin = 65000;
+    pump_servo_periodMax = 0;
+    pump_servo_periodTotal = 0;
+    pump_working_flag = true;
+  }else
+  {
+    pump_servoInterval = now - time_ref5;
+    if ( (pump_servoInterval < 16000) && (pump_servoInterval > 10) ) {
+      pump_servo_pulseCounter++;
+  
+      if(pump_servoInterval > pump_servo_periodMax)
+      {
+        pump_servo_periodMax = pump_servoInterval;
+      }else if(pump_servoInterval < pump_servo_periodMin)
+      {
+        pump_servo_periodMin = pump_servoInterval;
+      }
+  
+      pump_servo_periodTotal += pump_servoInterval;
+    }
   }
+  time_ref5 = now;
+
 }
-#endif
 
 void setup()
 {
   Serial.begin(9600);
-  
+  delay (10000);
   
   // Storing the modbus ID of the flash memory
   id = ID_FLASH.read();
@@ -163,10 +209,10 @@ void setup()
   pinMode(THERMI3_PIN,INPUT);
   pinMode(THERMI4_PIN,INPUT);
   pinMode(PUMP_ERR_PIN,INPUT);
-  pinMode(PUMP_SERVO_PIN,INPUT_PULLUP);
-#ifdef INTERRUPT
-  attachInterrupt(digitalPinToInterrupt(PUMP_SERVO_PIN),flipInterrupt,LOW);
-#endif
+  pinMode(PUMP_SERVO_PIN,INPUT);
+//#ifdef INTERRUPT
+  attachInterrupt(digitalPinToInterrupt(PUMP_SERVO_PIN),int_ISR,FALLING);
+//#endif
   
   // Output pin configuration
   pinMode(PUMP_SPEED_PIN,OUTPUT);
@@ -227,7 +273,7 @@ void setup()
   ModbusRTUServer.inputRegisterWrite(ERROR_CODE_REG,0);           // error code: 0
   ModbusRTUServer.holdingRegisterWrite(ID_REG,id.id);             // modbus ID
   ModbusRTUServer.holdingRegisterWrite(PUMP_SPEED_REG,0);         // pump - speed: 0
-  ModbusRTUServer.holdingRegisterWrite(PUMP_SPEED_INC_REG,2000);  // pump - speed increasing/decreasing: 2000 Hz
+  ModbusRTUServer.holdingRegisterWrite(PUMP_SPEED_INC_REG,SPEED_STEP);  // pump - speed increasing/decreasing: 2000 Hz
 
   // Configuration to manage the pump speed
   pwm.setClockDivider(1,false);
@@ -257,38 +303,39 @@ void setup()
         break;
     }
   }
+  Serial.println("Setup done.");
 }
 
-#ifdef INTERRUPTIBLE
-#else
-void flipFlopRead() {
+//#ifdef INTERRUPTIBLE
+//#else
+//void flipFlopRead() {
+//
+//  boolean highServo = HIGH == digitalRead(PUMP_SERVO_PIN);  // reading the pump servo signal (interrupts would be way better!)
+//  
+//  if (currServo) {
+//    if (!highServo) {
+//      flop++;
+//      currServo = false;
+//    }
+//  } else {
+//    if (highServo) {
+//      flip++;
+//      currServo = true;
+//    }    
+//  }
+//}
+//#endif
 
-  boolean highServo = HIGH == digitalRead(PUMP_SERVO_PIN);  // reading the pump servo signal (interrupts would be way better!)
-  
-  if (currServo) {
-    if (!highServo) {
-      flop++;
-      currServo = false;
-    }
-  } else {
-    if (highServo) {
-      flip++;
-      currServo = true;
-    }    
-  }
-}
-#endif
-
-void flipFlopDelay (int milliSeconds) {
-#ifdef INTERRUPTIBLE
-  delay(milliSeconds);
-#else
-  uint32_t time_ref = millis();
-  do {
-    flipFlopRead();
-  } while ( (millis()-time_ref) < milliSeconds );
-#endif
-}
+//void flipFlopDelay (int milliSeconds) {
+//#ifdef INTERRUPTIBLE
+//  delay(milliSeconds);
+//#else
+//  uint32_t time_ref = millis();
+//  do {
+//    flipFlopRead();
+//  } while ( (millis()-time_ref) < milliSeconds );
+//#endif
+//}
 
 void loop() {
   // Declaration and assignment of time variables
@@ -299,10 +346,10 @@ void loop() {
   uint32_t interval4 = tps - time_ref4;               // for 1.8 s interval
   uint32_t pump_error_ledOn = tps - time_ref_ledOn;   // to compute the led light time of the pump error code
 
-#ifdef INTERRUPTIBLE
-#else
-  flipFlopRead();
-#endif
+//#ifdef INTERRUPTIBLE
+//#else
+//  flipFlopRead();
+//#endif
     
   if(interval1>1000) // 1 s passed
   {
@@ -311,25 +358,46 @@ void loop() {
       Serial.print("\n");
       Serial.print("Slave ID = ");
       Serial.println(id.id);
+
+      Serial.print("Frq=");
+      Serial.print(pwm.frequency(1));
+      Serial.print(", Pul=");
+      Serial.print(pump_servo_pulseCounter);
+      Serial.print(", Lst=");
+      Serial.print(pump_servoInterval);
+      Serial.print(", Min=");
+      Serial.print(pump_servo_periodMin);
+      Serial.print(", Max=");
+      Serial.print(pump_servo_periodMax);
+      Serial.print(", Avg=");
+      Serial.print(pump_servo_periodTotal/pump_servo_pulseCounter);
+      Serial.print(", Str=");
+      Serial.print((pump_servo_periodMax*pump_servo_pulseCounter*100/pump_servo_periodTotal)-100);
+      Serial.print(", Rat=");
+      uint32_t periode = 1000000/(newSpeed*10/66);
+      Serial.println((periode*pump_servo_pulseCounter*100)/pump_servo_periodTotal);
+      pump_working_flag = false;
     }
     
     get_thermis();
     time_ref1 = tps;
   }
 
-  if(interval3>50) // 1/20 s passed
-  {
-    //ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_REG, flip > flop ? flip : flop);
-    //flip = flop = 0;
-    ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_REG, flip);
-    flip = 0;
-    time_ref3 = tps;
-  }
-
   if (interval2 > 35) // 35 ms passed
   {
-    ModbusRTUServer.poll(); // scans if a command is coming from the master
+    ModbusRTUServer.holdingRegisterWrite(PUMP_SERVO_PULSES_REG, pump_servo_pulseCounter);
+    ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_PERIODMIN_REG, pump_servo_periodMin);
+    ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_PERIODMAX_REG, pump_servo_periodMax);
+    ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_PERIODAVG_REG, pump_servo_periodTotal/pump_servo_pulseCounter);
+    //ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_PERIODSTDDEV_REG, pump_servo_periodAvg);
 
+    ModbusRTUServer.poll(); // scans if a command is coming from the master
+//    uint16_t newPulse = ModbusRTUServer.holdingRegisterRead(PUMP_SERVO_PULSES_REG);
+//    if (newPulse == 0) {
+//      pump_working_flag = false;      
+//    }
+    newSpeed = ModbusRTUServer.holdingRegisterRead(PUMP_SPEED_REG);
+    
     poll_pumpError(tps,pump_error_ledOn,interval4);  // polls the pump error pin
     manage_id();
     manage_pump();
@@ -338,6 +406,7 @@ void loop() {
 
     time_ref2 = tps;
   }
+  delay(1);
 }
 
 // Polls the pump error pin
@@ -509,7 +578,7 @@ void get_thermis()
   
   for(int8_t i=0;i<3;i++) // reading 3 values
   {
-    flipFlopDelay(10);
+    delay(10);
     
     thermis[0] = thermis[0] + analogRead(THERMI1_PIN);
     thermis[1] = thermis[1] + analogRead(THERMI2_PIN);

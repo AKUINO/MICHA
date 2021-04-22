@@ -41,13 +41,18 @@ THERMI2_REG = 0x02 # register which stores the thermistor 2 value (0 - 4095)
 THERMI3_REG = 0x03 # register which stores the thermistor 3 value (0 - 4095)
 THERMI4_REG = 0x04 # register which stores the thermistor 4 value (0 - 4095)
 PUMP_ERR_REG = 0x10   # register which stores the error code returned by the pump regulator
-PUMP_SERVO_REG = 0x11   # register which stores the speed returned by the pump servo
+PUMP_SERVO_PERIODMAX_REG     =    0x11   # register which stores the max period of the servo signal returned by the pump
+PUMP_SERVO_PERIODMIN_REG     =    0x12   # register which stores the min period of the servo signal returned by the pump
+PUMP_SERVO_PERIODAVG_REG     =    0x13   # register which stores the period average of the servo signal returned by the pump (on some time)
+PUMP_SERVO_PERIODSTDDEV_REG  =    0x14   # register which stores the period standard deviation of the servo signal returned by the pump  (on some time)
 ERROR_CODE_REG = 0x20   # register which stores the general error codes
+
 # holding registers
 ID_REG = 0x00   # register which stores the modbus ID
 PUMP_SPEED_REG = 0x10   # register which stores the pump speed
 PUMP_SPEED_INC_REG = 0x11 # register which stores the increasing/decreasing value of the pump frequency
 #PUMP_SPIN_RATE_REG = 0x12   # register which stores the pump spining rate approved
+PUMP_SERVO_PULSES_REG = 0x13   # register which stores the pulse count of the servo signal returned by the pump (on some time)
 
 
 # Class to manage the MICHA board
@@ -234,14 +239,21 @@ class Micha:
         try:
             serial_port = get_serial_port()
             
-            message = rtu.read_input_registers(SLAVE_ID, PUMP_SERVO_REG, 1)
+            message = rtu.read_input_registers(SLAVE_ID, PUMP_SERVO_PERIODMAX_REG , 3)
             response = rtu.send_message(message, serial_port)
+            
+            message = rtu.read_holding_registers(SLAVE_ID, PUMP_SERVO_PULSES_REG , 1)
+            response2 = rtu.send_message(message, serial_port)
+            response.append(response2[0])
+            
+            message = rtu.write_single_register(SLAVE_ID, PUMP_SERVO_PULSES_REG , 0)
+            response3 = rtu.send_message(message, serial_port)
             
             serial_port.close()
         except:
             traceback.print_exc()
         
-        return response[0]
+        return response
     
     def set_tank1(self,state=0): # to set the state of the tank 1
         if self.tank1 != state:
@@ -665,25 +677,29 @@ if __name__ == "__main__":
                     choice = '2'
                 if choice=='4':
                     cursp = pasto.get_pump_speed()
-                    spmin = 99999999
-                    spmax = 0
-                    spavg = 0
-                    spvar = 0
-                    for i in range(0,50):
-                        sp = pasto.get_pump_servo();
-                        print("Ticks from the servo = {}".format(sp))
-                        spmin = sp if sp < spmin else spmin
-                        spmax = sp if sp > spmax else spmax
-                        spavg += sp
-                        spvar += (sp*sp)
-                        time.sleep(0.050)
-                    spmin = int(spmin*20*6.4)
-                    spmax = int(spmax*20*6.4)
-                    spavg = int(spavg*20*6.4/50)
-                    stress = (((spvar*400*6.4*6.4)-(spavg*spavg))/2500)**0.5
-                    print ("Min=%d, Max=%d, Avg=%d Hz, Var²=%f" % (spmin,spmax, spavg, stress) )
+                    servol = pasto.get_pump_servo();
+                    # spmin = 99999999
+                    # spmax = 0
+                    # spavg = 0
+                    # spvar = 0
+                    # for i in range(0,50):
+                        # sp = pasto.get_pump_servo();
+                        # print("Ticks from the servo = {}".format(sp))
+                        # spmin = sp if sp < spmin else spmin
+                        # spmax = sp if sp > spmax else spmax
+                        # spavg += sp
+                        # spvar += (sp*sp)
+                        # time.sleep(0.050)
+                    # spmin = int(spmin*20*6.4)
+                    # spmax = int(spmax*20*6.4)
+                    # spavg = int(spavg*20*6.4/50)
+                    # stress = (((spvar*400*6.4*6.4)-(spavg*spavg))/2500)**0.5
+                    # print ("Min=%d, Max=%d, Avg=%d Hz, Var²=%f" % (spmin,spmax, spavg, stress) )
+                    # if cursp:
+                        # print ("Min=%f1%%, Max=%f1%%, Avg=%f1%%, stress=%f1%%" % (spmin*100.0/cursp-100.0,spmax*100.0/cursp-100.0, spavg*100.0/cursp-100.0, 100.0*stress/cursp ) )
+                    print ("Min=%d, Max=%d, Avg=%d Hz, Pulse²=%d" % (servol[1],servol[0], servol[2], servol[3]) )
                     if cursp:
-                        print ("Min=%f1%%, Max=%f1%%, Avg=%f1%%, stress=%f1%%" % (spmin*100.0/cursp-100.0,spmax*100.0/cursp-100.0, spavg*100.0/cursp-100.0, 100.0*stress/cursp ) )
+                        print ("Min=%f1%%, Max=%f1%%, Avg=%f1%%" % (servol[1]*100.0/cursp-100.0,servol[0]*100.0/cursp-100.0, servol[2]*100.0/cursp-100.0 ) )
                 if choice=='5':
                     print("Error returned by the regulator = {}".format(pasto.get_pump_error()))
                 

@@ -6,6 +6,8 @@
 // constants
 #define ID                      1     // default modbus ID
 
+#define SPEED_STEP    200 // Default speed Hz decrease/increase
+
 // configuration of the relative register adresses
 // coils
 #define BOOT_FLAG_REG                     0x00   // register which stores the boot state
