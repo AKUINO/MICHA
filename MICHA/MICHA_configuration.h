@@ -4,9 +4,8 @@
 
 
 // constants
-#define ID                      1     // default modbus ID
-
-#define SPEED_STEP    200 // Default speed Hz decrease/increase
+#define ID                  1     // default modbus ID
+#define SPEED_STEP          200   // default speed Hz decrease/increase
 
 // configuration of the relative register adresses
 // coils

@@ -11,6 +11,8 @@
 // WARNING: please verify the output states match with your hardware states (is it the same logic?)
 //
 // Version notes:
+//  - v1.1.4:
+//          - pump servo signal decoding implemented
 //  - v1.1.3:
 //          - registrer structure updated: the pump servo registers have been added/modified
 //  - v1.1.2:
