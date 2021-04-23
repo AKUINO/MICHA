@@ -9,7 +9,6 @@
 
 // configuration of the relative register adresses
 // coils
-#define BOOT_FLAG_REG                     0x00   // register which stores the boot state
 #define THERMIS_POW_REG                   0x01   // register which stores the thermistor power state
 #define PUMP_DIR_REG                      0x10   // register which stores the pump direction
 #define PUMP_POW_REG                      0x11   // register which stores the pump power state
@@ -21,6 +20,8 @@
 #define VALVE1_DIR_REG                    0x33   // register which stores the valve 1 direction
 #define VALVE2_POW_REG                    0x34   // register which stores the valve 2 power state
 #define VALVE2_DIR_REG                    0x35   // register which stores the valve 2 direction
+#define BOOT_FLAG_REG                     0x40   // register which stores the boot state
+#define DEBUG_FLAG_REG                    0x41   // register which stores the debug state
 // input registers
 #define GEN_STATE_REG                     0x00   // register which stores the general state of the system
 #define THERMI1_REG                       0x01   // register which stores the thermistor 1 value (0 - 4095)
