@@ -128,8 +128,6 @@ uint8_t pump_err_count = 0;       // to store the pulse number count (pump error
 boolean pump_err_flag = false;    // indicates if a pump error is occuring
 boolean pump_err_prevState = 0;   // previous state of the pump error signal
 
-uint16_t newSpeed = 0; // Last speed set by RPi
-
 //#ifdef INTERRUPTIBLE
 //long volatile precFlip = 0;
 //
@@ -177,7 +175,7 @@ void int_ISR()
 void setup()
 {
   Serial.begin(9600);
-  delay (10000);
+  delay(10000);
   
   // Storing the modbus ID of the flash memory
   id = ID_FLASH.read();
@@ -359,8 +357,9 @@ void loop() {
       Serial.print("Slave ID = ");
       Serial.println(id.id);
 
+      int freq = pwm.frequency(1);
       Serial.print("Frq=");
-      Serial.print(pwm.frequency(1));
+      Serial.print(freq);
       Serial.print(", Pul=");
       Serial.print(pump_servo_pulseCounter);
       Serial.print(", Lst=");
@@ -373,9 +372,11 @@ void loop() {
       Serial.print(pump_servo_periodTotal/pump_servo_pulseCounter);
       Serial.print(", Str=");
       Serial.print((pump_servo_periodMax*pump_servo_pulseCounter*100/pump_servo_periodTotal)-100);
-      Serial.print(", Rat=");
-      uint32_t periode = 1000000/(newSpeed*10/66);
-      Serial.println((periode*pump_servo_pulseCounter*100)/pump_servo_periodTotal);
+      if (freq != 0) {
+        Serial.print(", Rat=");
+        uint32_t periode = 1000000/(freq*10/66);
+        Serial.println((periode*pump_servo_pulseCounter*100)/pump_servo_periodTotal);
+      }
       pump_working_flag = false;
     }
     
@@ -396,7 +397,6 @@ void loop() {
 //    if (newPulse == 0) {
 //      pump_working_flag = false;      
 //    }
-    newSpeed = ModbusRTUServer.holdingRegisterRead(PUMP_SPEED_REG);
     
     poll_pumpError(tps,pump_error_ledOn,interval4);  // polls the pump error pin
     manage_id();
@@ -618,28 +618,49 @@ void get_thermis()
 void manage_pump()
 {
   uint16_t pump_speed = ModbusRTUServer.holdingRegisterRead(PUMP_SPEED_REG);
-  static uint16_t pump_speed_prev = 0;
-  static int frequency_curr = 0; // current frequency (compute by the pwm instance)
   int16_t frequency_inc = ModbusRTUServer.holdingRegisterRead(PUMP_SPEED_INC_REG);
   int8_t pump_dir = ModbusRTUServer.coilRead(PUMP_DIR_REG);
   int8_t pump_pow = ModbusRTUServer.coilRead(PUMP_POW_REG);
   
-  if(pump_speed_prev!=pump_speed)
+  if(digitalRead(PUMP_POW_PIN)!=pump_pow)
   {
     if (DEBUG) {
-      Serial.println("Pump speed modified");
+      Serial.print("Pump power=");
+      Serial.print(pump_pow);
+      Serial.println(" (modified)");
     }
+    pwm.timer(1,1,0xFFFFFF,false);   // Stops until resetted...
+    pwm.analogWrite(PUMP_SPEED_PIN,0);
+    digitalWrite(PUMP_POW_PIN,pump_pow);
+    if (pump_pow == HIGH) { // Normally CLOSE: if HIGH, current is stopped: do not continue!
+      return;
+    }
+  }
+
+  if(digitalRead(PUMP_DIR_PIN)!=pump_dir)
+  {
+    pwm.timer(1,1,0xFFFFFF,false);
+    pwm.analogWrite(PUMP_SPEED_PIN,0);
+    if (DEBUG) {
+      Serial.println("Pump direction modified");
+    }
+    digitalWrite(PUMP_DIR_PIN,pump_dir);
+  }
+
+ int frequency_curr = pwm.frequency(1); // current frequency (compute by the pwm instance)
+
+ if(frequency_curr!=pump_speed)
+  {
+    //if (DEBUG) {
+    //  Serial.println("Pump speed modified");
+    //}
 
     steps = calculSteps(pump_speed);
     speed_flag = 1;
-    
-    pump_speed_prev = pump_speed;
   }
 
   if(speed_flag)
   { 
-    frequency_curr = pwm.frequency(1);
-    
     if(frequency_curr < pump_speed)  // if the speed must increase
     {
       frequency_curr += frequency_inc;
@@ -647,16 +668,11 @@ void manage_pump()
 
       if(frequency_curr>=pump_speed)
       {
-        steps = calculSteps(pump_speed);
-        pwm.timer(1,1,steps,false);
-        pwm.analogWrite(PUMP_SPEED_PIN,500); //duty-cycle = 50%
-      
+        steps = calculSteps(pump_speed);      
         speed_flag = 0;
-      }else
-      {
-        pwm.timer(1,1,steps,false);
-        pwm.analogWrite(PUMP_SPEED_PIN,500); //duty-cycle = 50%
       }
+      pwm.timer(1,1,steps,false);
+      pwm.analogWrite(PUMP_SPEED_PIN,500); //duty-cycle = 50%
     }
     else if(frequency_curr > pump_speed) // if the speed must decrease
     {
@@ -673,33 +689,12 @@ void manage_pump()
         if(frequency_curr <= pump_speed) // the freqyuency can not go under the setpoint frequency
         {
           steps = calculSteps(pump_speed);
-          pwm.timer(1,1,steps,false);
-          pwm.analogWrite(PUMP_SPEED_PIN,500); //duty-cycle = 50%
-
           speed_flag = 0;
-        }else
-        {
-          pwm.timer(1,1,steps,false);
-          pwm.analogWrite(PUMP_SPEED_PIN,500); //duty-cycle = 50%
         }
+        pwm.timer(1,1,steps,false);
+        pwm.analogWrite(PUMP_SPEED_PIN,500); //duty-cycle = 50%
       }
     }
-  }
-
-  if(digitalRead(PUMP_DIR_PIN)!=pump_dir)
-  {
-    if (DEBUG) {
-      Serial.println("Pump direction modified");
-    }
-    digitalWrite(PUMP_DIR_PIN,pump_dir);
-  }
-
-  if(digitalRead(PUMP_POW_PIN)!=pump_pow)
-  {
-    if (DEBUG) {
-      Serial.println("Pump power modified");
-    }
-    digitalWrite(PUMP_POW_PIN,pump_pow);
   }
 }
 
