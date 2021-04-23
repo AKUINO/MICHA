@@ -1,9 +1,9 @@
 // MICHA project
-// Slave modbus code
+// Slave modbus code (modbus server)
 // Board type: Arduino MKR Zero
 // Components of the pastorizator managed:
 //    - pump
-//    - 2 heating taaks
+//    - 2 heating tanks
 //    - 2 valves
 //    - 2 solenoids
 //    - 4 thermistors
@@ -11,6 +11,9 @@
 // WARNING: please verify the output states match with your hardware states (is it the same logic?)
 //
 // Version notes:
+//  - v1.1.4:
+//          - pump servo signal decoding implemented
+//          - debug management implemented (DEBUG_FLAG_REG)
 //  - v1.1.3:
 //          - registrer structure updated: the pump servo registers have been added/modified
 //  - v1.1.2:
@@ -78,8 +81,6 @@
 #include <SAMD21turboPWM.h>
 #include "MICHA_configuration.h"    // register configuration and pin assignment file
 
-// With DEBUG false, less Serial.print, better timing...
-#define DEBUG true
 // Interruption are supported on pins D0,1,4,5,6,7,8,9 A1,2
 //#define INTERRUPTIBLE
 
@@ -100,6 +101,7 @@ unsigned long long int steps = 0;
 boolean speed_flag = 0;
 
 // variables diverses
+boolean debug_flag = true;        // debug mode enable (with debug_flag false, less Serial.print, better timing...)
 uint32_t time_ref1 = 0;           // thermistor reading reference time
 uint32_t time_ref2 = 0;           // reference time for other operations
 uint32_t time_ref3 = 0;           // last millis when storing pump servo count
@@ -250,12 +252,11 @@ void setup()
 
 
   // Modbus register configuration
-  ModbusRTUServer.configureCoils(0x00, 64);
+  ModbusRTUServer.configureCoils(0x00, 80);
   ModbusRTUServer.configureInputRegisters(0x00, 48);
   ModbusRTUServer.configureHoldingRegisters(0x00, 32);
 
   // Default assignment of registers
-  ModbusRTUServer.coilWrite(BOOT_FLAG_REG,1);                     // starting flag: ON
   ModbusRTUServer.coilWrite(THERMIS_POW_REG,0);                   // thermistors - power: OFF
   ModbusRTUServer.coilWrite(PUMP_DIR_REG,0);                      // pump - direction: 0
   ModbusRTUServer.coilWrite(PUMP_POW_REG,0);                      // pump - power: OFF
@@ -267,6 +268,8 @@ void setup()
   ModbusRTUServer.coilWrite(VALVE1_DIR_REG,0);                    // valve 1 - direction: 0
   ModbusRTUServer.coilWrite(VALVE2_POW_REG,0);                    // valve 2 - power: OFF
   ModbusRTUServer.coilWrite(VALVE2_DIR_REG,0);                    // valve 2 - direction: 0
+  ModbusRTUServer.coilWrite(BOOT_FLAG_REG,1);                     // starting flag: ON
+  ModbusRTUServer.coilWrite(DEBUG_FLAG_REG,1);                    // debug flag: ON  
   ModbusRTUServer.inputRegisterWrite(GEN_STATE_REG,0);            // general state: 0 (no problem)
   ModbusRTUServer.inputRegisterWrite(ERROR_CODE_REG,0);           // error code: 0
   ModbusRTUServer.holdingRegisterWrite(ID_REG,id.id);             // modbus ID
@@ -352,7 +355,7 @@ void loop() {
   if(interval1>1000) // 1 s passed
   {
     // To display the modbus ID when debugging (if it has just been modified, this is display but a reboot is necessary to use this new ID)
-    if (DEBUG) {
+    if (debug_flag) {
       Serial.print("\n");
       Serial.print("Slave ID = ");
       Serial.println(id.id);
@@ -386,6 +389,8 @@ void loop() {
 
   if (interval2 > 35) // 35 ms passed
   {
+    debug_flag = ModbusRTUServer.coilRead(DEBUG_FLAG_REG);
+    
     ModbusRTUServer.holdingRegisterWrite(PUMP_SERVO_PULSES_REG, pump_servo_pulseCounter);
     ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_PERIODMIN_REG, pump_servo_periodMin);
     ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_PERIODMAX_REG, pump_servo_periodMax);
@@ -498,7 +503,7 @@ void manage_valves()
   
   if(digitalRead(SOL_HOT_PIN)!=sol_hot)
   {
-    if (DEBUG) {
+    if (debug_flag) {
       Serial.println("Solenoid 1 state modified");
     }
     digitalWrite(SOL_HOT_PIN,sol_hot);
@@ -506,7 +511,7 @@ void manage_valves()
 
   if(digitalRead(SOL_COLD_PIN)!=sol_cold)
   {
-    if (DEBUG) {
+    if (debug_flag) {
       Serial.println("Solenoid 2 state modified");
     }
     digitalWrite(SOL_COLD_PIN,sol_cold);
@@ -514,7 +519,7 @@ void manage_valves()
 
   if(digitalRead(VALVE1_POW_PIN)!=valve1_pow)
   {
-    if (DEBUG) {
+    if (debug_flag) {
       Serial.println("Valve 1 power state modified");
     }
     digitalWrite(VALVE1_POW_PIN,valve1_pow);
@@ -522,7 +527,7 @@ void manage_valves()
 
   if(digitalRead(VALVE1_DIR_PIN)!=valve1_dir)
   {
-    if (DEBUG) {
+    if (debug_flag) {
       Serial.println("Valve 1 direction state modified");
     }
     digitalWrite(VALVE1_DIR_PIN,valve1_dir);
@@ -530,7 +535,7 @@ void manage_valves()
 
   if(digitalRead(VALVE2_POW_PIN)!=valve2_pow)
   {
-    if (DEBUG) {
+    if (debug_flag) {
       Serial.println("Valve 2 power state modified");
     }
     digitalWrite(VALVE2_POW_PIN,valve2_pow);
@@ -538,7 +543,7 @@ void manage_valves()
 
   if(digitalRead(VALVE2_DIR_PIN)!=valve2_dir)
   {
-    if (DEBUG) {
+    if (debug_flag) {
       Serial.println("Valve 2 direction state modified");
     }
     digitalWrite(VALVE2_DIR_PIN,valve2_dir);
@@ -553,7 +558,7 @@ void manage_tanks()
   
   if(digitalRead(TANK1_PIN)!=tank1)
   {
-    if (DEBUG) {
+    if (debug_flag) {
       Serial.println("Tank 1 state modified");
     }
     digitalWrite(TANK1_PIN,tank1);
@@ -561,7 +566,7 @@ void manage_tanks()
 
   if(digitalRead(TANK2_PIN)!=tank2)
   {
-    if (DEBUG) {
+    if (debug_flag) {
       Serial.println("Tank 2 state modified");
     }
     digitalWrite(TANK2_PIN,tank2);
@@ -601,7 +606,7 @@ void get_thermis()
   ModbusRTUServer.inputRegisterWrite(THERMI4_REG,thermis[3]);
 
   // To debug
-  if (DEBUG) {
+  if (debug_flag) {
     for (int8_t i=0;i<4;i++)
     {
       Serial.print("Thermi");
@@ -624,7 +629,7 @@ void manage_pump()
   
   if(digitalRead(PUMP_POW_PIN)!=pump_pow)
   {
-    if (DEBUG) {
+    if (debug_flag) {
       Serial.print("Pump power=");
       Serial.print(pump_pow);
       Serial.println(" (modified)");
