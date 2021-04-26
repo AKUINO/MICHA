@@ -13,10 +13,6 @@ import time
 SLAVE_ID = 1
 
 VOLTAGE_REF = 2.497 # value of the excitement voltage reference
-R_DIVBRIDGE = 1998 # value of the divider bridge resistor (top resistor)
-R_TRANSISTOR = 2 # value of the conduction resistance of the transistor
-THERMI_BETA = 3694 # from datasheet
-THERMI_T25 = 10000 # value of the thermistor at 25°C
 THERMI_WIRE = 0.6 # value of the twin wire resistor
 
 
@@ -30,9 +26,9 @@ TANK1_REG = 0x20 # register which stores the tank 1 state
 TANK2_REG =0x21   # register which stores the tank 2 state
 SOL_HOT_REG = 0x30   # register which stores the hot water solenoid state
 SOL_COLD_REG = 0x31   # register which stores the cold water solenoid state
-VALVE1_POW_REG = 0x32   # register which stores the valve 1 power state
+VALVE1_POW_REG = 0x32   # register which stores the valve 1 power state; OPEN with chinese valve
 VALVE2_POW_REG = 0x34   # register which stores the valve 2 power state
-VALVE1_DIR_REG = 0x33   # register which stores the valve 1 direction
+VALVE1_DIR_REG = 0x33   # register which stores the valve 1 direction; CLOSE with chinese valve
 VALVE2_DIR_REG = 0x35   # register which stores the valve 2 direction
 # input registers
 GEN_STATE_REG = 0x00 # register which stores the general state of the system
@@ -57,7 +53,8 @@ PUMP_SERVO_PULSES_REG = 0x13   # register which stores the pulse count of the se
 
 # Class to manage the MICHA board
 class Micha:
-    def __init__(self):
+    def __init__(self,device='/dev/serial0'):
+        self.device = device
         self.boot_flag = 1
         self.thermi = 0
         self.pump_speed = 0
@@ -73,34 +70,94 @@ class Micha:
         self.valve2_dir = 0
         self.general_state = 0
         self.error_code = 0
+        self.busy = False
+        self.port = None
     
-    def get_boot_flag(self): # to get the boot state
+    # Configuration and starting of the modbus communication
+    def get_serial_port(self):
+        while self.busy:
+            time.sleep(0.1)
+        self.busy = True
+        while not self.port: # In case of error, we reset the access to the ModBus
+            try:
+                """Return a serial.Serial instance which is ready to use with a RS485 adaptor."""
+                self.port = Serial(port=self.device, baudrate=9600, parity=PARITY_NONE, stopbits=1, bytesize=8, timeout=1)
+            except:
+                traceback.print_exc()
+                self.port = None
+                time.sleep(1) # Do not retry too fast...
+        return self.port
+
+    def close_serial_port(self):
+        if self.port:
+            try:
+                self.port.close()
+            except:
+                pass
+            self.port = None
+        self.busy = False
+
+    def release_serial_port(self):
+        self.busy = False
+        
+    def read_pin(self,reg):
         try:
-            serial_port = get_serial_port()
-            
-            message = rtu.read_coils(SLAVE_ID, BOOT_FLAG_REG, 1)
+            serial_port = self.get_serial_port()
+            message = rtu.read_coils(SLAVE_ID, reg, 1)
             response = rtu.send_message(message, serial_port)
-            self.boot_flag = response[0]
-            
-            serial_port.close()
+            response = response[0]
+            self.release_serial_port()
+            return response
         except:
             traceback.print_exc()
+            self.close_serial_port()
+        return None
+
+    def write_pin(self,reg,val):
+        try:
+            serial_port = self.get_serial_port()
             
+            message = rtu.write_single_coil(SLAVE_ID, reg, val)
+            response = rtu.send_message(message, serial_port)
+            self.release_serial_port()
+            return response
+        except:
+            traceback.print_exc()
+            self.close_serial_port()
+        return None
+
+    def read_input(self,reg):
+        try:
+            serial_port = self.get_serial_port()            
+            message = rtu.read_input_registers(SLAVE_ID, reg, 1)
+            response = rtu.send_message(message, serial_port)
+            self.release_serial_port()
+            return response[0]
+        except:
+            traceback.print_exc()
+            self.close_serial_port()
+        return None
+
+    def write_holding(self,reg, val):
+        try:
+            serial_port = self.get_serial_port()            
+            message = rtu.write_single_register(SLAVE_ID, reg, val)
+            response = rtu.send_message(message, serial_port)
+            self.release_serial_port()
+            return response
+        except:
+            traceback.print_exc()
+            self.close_serial_port()
+        return None
+
+    def get_boot_flag(self): # to get the boot state
+        self.boot_flag = self.read_pin(BOOT_FLAG_REG)
         return self.boot_flag
     
     def set_boot_flag(self,flag=0): # to set the boot state
         if self.boot_flag != flag:
             self.boot_flag = flag
-            
-            try:
-                serial_port = get_serial_port()
-                
-                message = rtu.write_single_coil(SLAVE_ID, BOOT_FLAG_REG, flag)
-                response = rtu.send_message(message, serial_port)
-                
-                serial_port.close()
-            except:
-                traceback.print_exc()
+            response = self.write_pin(BOOT_FLAG_REG, flag)
             return response
         return 0
     
@@ -108,7 +165,7 @@ class Micha:
         self.thermi = th
         
         try:
-            serial_port = get_serial_port()
+            serial_port = self.get_serial_port()
             
             if self.thermi==0: # get the value of all the thermistors
                 message = rtu.read_input_registers(SLAVE_ID, THERMI1_REG, 4)
@@ -134,16 +191,7 @@ class Micha:
     def set_pump_power(self,power=0): # to set the power of the pump
         if self.pump_power != power:
             self.pump_power = power
-            
-            try:
-                serial_port = get_serial_port()
-                
-                message = rtu.write_single_coil(SLAVE_ID, PUMP_POW_REG, power)
-                response = rtu.send_message(message, serial_port)
-                
-                serial_port.close()
-            except:
-                traceback.print_exc()
+            response = self.write_pin(PUMP_POW_REG, power)
             return response
         return 0
 
@@ -152,7 +200,7 @@ class Micha:
             self.pump_speed = speed
             
             try:
-                serial_port = get_serial_port()
+                serial_port = self.get_serial_port()
                 
                 message = rtu.write_single_register(SLAVE_ID, PUMP_SPEED_REG, speed)
                 response = rtu.send_message(message, serial_port)
@@ -166,51 +214,21 @@ class Micha:
     def set_pump_dir(self,dir=0): # to set the direction of the pump
         if self.pump_dir!=dir:
             self.pump_dir = dir
-            
-            try:
-                serial_port = get_serial_port()
-                
-                message = rtu.write_single_coil(SLAVE_ID, PUMP_DIR_REG, dir)
-                response = rtu.send_message(message, serial_port)
-                
-                serial_port.close()
-            except:
-                traceback.print_exc()
-            
+            response = self.write_pin(PUMP_DIR_REG, dir)
             return response
         return 0
     
     def get_pump_power(self): # to get the power state of the pump (stored in the register), returns the pump power state
-        try:
-            serial_port = get_serial_port()
-            
-            message = rtu.read_coils(SLAVE_ID, PUMP_POW_REG, 1)
-            response = rtu.send_message(message, serial_port)
-            self.pump_power = response[0]
-            
-            serial_port.close()
-        except:
-            traceback.print_exc()
-            
+        self.pump_power = self.read_pin(PUMP_POW_REG)
         return self.pump_power
     
     def get_pump_dir(self): # to get the direction state of the pump (stored in the register), returns the pump direction value
-        try:
-            serial_port = get_serial_port()
-            
-            message = rtu.read_coils(SLAVE_ID, PUMP_DIR_REG, 1)
-            response = rtu.send_message(message, serial_port)
-            self.pump_dir = response[0]
-            
-            serial_port.close()
-        except:
-            traceback.print_exc()
-            
+        self.pump_dir = self.read_pin(PUMP_DIR_REG)
         return self.pump_dir
     
     def get_pump_speed(self): # to get the speed of the pump (stored in the register), returns the pump speed
         try:
-            serial_port = get_serial_port()
+            serial_port = self.get_serial_port()
             
             message = rtu.read_holding_registers(SLAVE_ID, PUMP_SPEED_REG, 1)
             response = rtu.send_message(message, serial_port)
@@ -223,21 +241,11 @@ class Micha:
         return self.pump_speed
     
     def get_pump_error(self): # to get the error code returned by the pump regulator, returns the pump error code
-        try:
-            serial_port = get_serial_port()
-            
-            message = rtu.read_input_registers(SLAVE_ID, PUMP_ERR_REG, 1)
-            response = rtu.send_message(message, serial_port)
-            
-            serial_port.close()
-        except:
-            traceback.print_exc()
-        
-        return response[0]
+        return self.read_input(PUMP_ERR_REG)
             
     def get_pump_servo(self): # to get the pump speed returned by the servo of the pump
         try:
-            serial_port = get_serial_port()
+            serial_port = self.get_serial_port()
             
             message = rtu.read_input_registers(SLAVE_ID, PUMP_SERVO_PERIODMAX_REG , 3)
             response = rtu.send_message(message, serial_port)
@@ -258,279 +266,101 @@ class Micha:
     def set_tank1(self,state=0): # to set the state of the tank 1
         if self.tank1 != state:
             self.tank1 = state
-            
-            try:
-                serial_port = get_serial_port()
-                
-                message = rtu.write_single_coil(SLAVE_ID, TANK1_REG, state)
-                response = rtu.send_message(message, serial_port)
-                
-                serial_port.close()
-            except:
-                traceback.print_exc()
+            response = self.write_pin(TANK1_REG, state)
             return response
         return 0
 
     def set_tank2(self,state=0): # to set the state of the tank 2
         if self.tank2 != state:
             self.tank2 = state
-            
-            try:
-                serial_port = get_serial_port()
-                
-                message = rtu.write_single_coil(SLAVE_ID, TANK2_REG, state)
-                response = rtu.send_message(message, serial_port)
-                
-                serial_port.close()
-            except:
-                traceback.print_exc()
+            response = self.write_pin(TANK2_REG, state)
             return response
         return 0
     
     def get_tank1(self): # to get the state of the tank 1 (stored in the register)
-        try:
-            serial_port = get_serial_port()
-            
-            message = rtu.read_coils(SLAVE_ID, TANK1_REG, 1)
-            response = rtu.send_message(message, serial_port)
-            self.tank1 = response[0]
-            
-            serial_port.close()
-        except:
-            traceback.print_exc()
-            
+        self.tank1 = self.read_pin(TANK1_REG)
         return self.tank1
     
     def get_tank2(self): # to get the state of the tank 2 (stored in the register)
-        try:
-            serial_port = get_serial_port()
-            
-            message = rtu.read_coils(SLAVE_ID, TANK2_REG, 1)
-            response = rtu.send_message(message, serial_port)
-            self.tank2 = response[0]
-            
-            serial_port.close()
-        except:
-            traceback.print_exc()
-            
+        self.tank2 = self.read_pin(TANK2_REG)
         return self.tank2
     
     def set_sol_hot(self,state=0): # to set the state of the hot water solenoid
         if self.sol_hot != state:
             self.sol_hot = state
-            
-            try:
-                serial_port = get_serial_port()
-                
-                message = rtu.write_single_coil(SLAVE_ID, SOL_HOT_REG, state)
-                response = rtu.send_message(message, serial_port)
-                
-                serial_port.close()
-            except:
-                traceback.print_exc()
+            response = self.write_pin(SOL_HOT_REG, state)
             return response
         return 0
     
     def set_sol_cold(self,state=0): # to set the state of the cold water solenoid
         if self.sol_cold != state:
             self.sol_cold = state
-            
-            try:
-                serial_port = get_serial_port()
-                
-                message = rtu.write_single_coil(SLAVE_ID, SOL_COLD_REG, state)
-                response = rtu.send_message(message, serial_port)
-                
-                serial_port.close()
-            except:
-                traceback.print_exc()
+            response = self.write_pin(SOL_COLD_REG, state)
             return response
         return 0
     
     def get_sol_hot(self): # to get the state of the hot water solenoid (stored in the register)
-        try:
-            serial_port = get_serial_port()
-            
-            message = rtu.read_coils(SLAVE_ID, SOL_HOT_REG, 1)
-            response = rtu.send_message(message, serial_port)
-            self.sol_hot = response[0]
-            
-            serial_port.close()
-        except:
-            traceback.print_exc()
-            
+        self.sol_hot = self.read_pin(SOL_HOT_REG)
         return self.sol_hot
     
     def get_sol_cold(self): # to get the state of the cold water solenoid (stored in the register)
-        try:
-            serial_port = get_serial_port()
-            
-            message = rtu.read_coils(SLAVE_ID, SOL_COLD_REG, 1)
-            response = rtu.send_message(message, serial_port)
-            self.sol_cold = response[0]
-            
-            serial_port.close()
-        except:
-            traceback.print_exc()
-            
+        self.sol_cold = self.read_pin(SOL_COLD_REG)
         return self.sol_cold
     
     def set_valve1_power(self,power=0): # to set the power state of the valve 1
         if self.valve1_power != power:
             self.valve1_power = power
-            
-            try:
-                serial_port = get_serial_port()
-                
-                message = rtu.write_single_coil(SLAVE_ID, VALVE1_POW_REG, power)
-                response = rtu.send_message(message, serial_port)
-                
-                serial_port.close()
-            except:
-                traceback.print_exc()
+            response = self.write_pin(VALVE1_POW_REG, power)
             return response
         return 0
     
     def set_valve2_power(self,power=0): # to set the power state of the valve 2
         if self.valve2_power != power:
             self.valve2_power = power
-            
-            try:
-                serial_port = get_serial_port()
-                
-                message = rtu.write_single_coil(SLAVE_ID, VALVE2_POW_REG, power)
-                response = rtu.send_message(message, serial_port)
-                
-                serial_port.close()
-            except:
-                traceback.print_exc()
+            response = self.write_pin(VALVE2_POW_REG, power)
             return response
         return 0
     
     def get_valve1_power(self): # to get the power state of the valve 1 (stored in the register)
-        try:
-            serial_port = get_serial_port()
-            
-            message = rtu.read_coils(SLAVE_ID, VALVE1_POW_REG, 1)
-            response = rtu.send_message(message, serial_port)
-            self.valve1_power = response[0]
-            
-            serial_port.close()
-        except:
-            traceback.print_exc()
-            
+        self.valve1_power = self.read_pin(VALVE1_POW_REG)
         return self.valve1_power
     
     def get_valve2_power(self): # to get the power state of the valve 2 (stored in the register)
-        try:
-            serial_port = get_serial_port()
-            
-            message = rtu.read_coils(SLAVE_ID, VALVE2_POW_REG, 1)
-            response = rtu.send_message(message, serial_port)
-            self.valve2_power= response[0]
-            
-            serial_port.close()
-        except:
-            traceback.print_exc()
-            
+        self.valve2_power = self.read_pin(VALVE2_POW_REG)
         return self.valve2_power
     
     def set_valve1_dir(self,dir=0): # to set the direction of the valve 1
         if self.valve1_dir != dir:
             self.valve1_dir = dir
-            
-            try:
-                serial_port = get_serial_port()
-                
-                message = rtu.write_single_coil(SLAVE_ID, VALVE1_DIR_REG, dir)
-                response = rtu.send_message(message, serial_port)
-                
-                serial_port.close()
-            except:
-                traceback.print_exc()
+            response = self.write_pin(VALVE1_DIR_REG, dir)
             return response
         return 0
     
     def set_valve2_dir(self,dir=0): # to set the direction of the valve 2
         if self.valve2_dir!=dir:
             self.valve2_dir = dir
-            
-            try:
-                serial_port = get_serial_port()
-                
-                message = rtu.write_single_coil(SLAVE_ID, VALVE2_DIR_REG, dir)
-                response = rtu.send_message(message, serial_port)
-                
-                serial_port.close()
-            except:
-                traceback.print_exc()
+            response = self.write_pin(VALVE2_DIR_REG, dir)
             return response
         return 0
     
     def get_valve1_dir(self): # to get the direction of the valve 1 (stored in the register)
-        try:
-            serial_port = get_serial_port()
-            
-            message = rtu.read_coils(SLAVE_ID, VALVE1_DIR_REG, 1)
-            response = rtu.send_message(message, serial_port)
-            self.valve1_dir = response[0]
-            
-            serial_port.close()
-        except:
-            traceback.print_exc()
-            
+        self.valve1_dir = self.read_pin(VALVE1_DIR_REG)
         return self.valve1_dir
-    
+
     def get_valve2_dir(self): # to get the direction of the valve 2 (stored in the register)
-        try:
-            serial_port = get_serial_port()
-            
-            message = rtu.read_coils(SLAVE_ID, VALVE2_DIR_REG, 1)
-            response = rtu.send_message(message, serial_port)
-            self.valve2_dir= response[0]
-            
-            serial_port.close()
-        except:
-            traceback.print_exc()
-            
+        self.valve2_dir = self.read_pin(VALVE2_DIR_REG)
         return self.valve2_dir
-    
+
     def get_general_state(self): # to get the general state of the system (stored in the register)
-        try:
-            serial_port = get_serial_port()
-            
-            message = rtu.read_input_registers(SLAVE_ID, GEN_STATE_REG, 4)
-            response = rtu.send_message(message, serial_port)
-            self.general_state= response[0]
-            
-            serial_port.close()
-        except:
-            traceback.print_exc()
-            
+        self.general_state = self.read_input(GEN_STATE_REG)
         return self.general_state
     
     def get_error_code(self): # to get the general error code
-        try:
-            serial_port = get_serial_port()
-            
-            message = rtu.read_input_registers(SLAVE_ID, ERROR_CODE_REG, 4)
-            response = rtu.send_message(message, serial_port)
-            self.error_code= response[0]
-            
-            serial_port.close()
-        except:
-            traceback.print_exc()
-            
+        self.error_code = self.read_input(ERROR_CODE_REG)
         return self.error_code
     
 # test section
 if __name__ == "__main__":
-    # Configuration and starting of the modbus communication
-    def get_serial_port():
-        """Return a serial.Serial instance which is ready to use with a RS485 adaptor."""
-        port = Serial(port='/dev/serial0', baudrate=9600, parity=PARITY_NONE, stopbits=1, bytesize=8, timeout=1)
-        
-        return port
     
     def boot_monitoring():
         if pasto.get_boot_flag():
@@ -1001,6 +831,7 @@ if __name__ == "__main__":
         
             choice = '-1' 
 
+    hardConf.close()
     print("\nBye!\n")
 
 
