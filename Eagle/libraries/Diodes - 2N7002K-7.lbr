@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE eagle SYSTEM "eagle.dtd">
+<eagle>
+    <drawing>
+        <grid unitdist="mm" unit="mm"/>
+        <layers>
+            <layer name="Top" color="4" number="1" visible="yes" active="yes" fill="1"/>
+            <layer name="Bottom" color="4" number="16" visible="yes" active="yes" fill="1"/>
+            <layer name="tPlace" color="7" number="21" visible="yes" active="yes" fill="1"/>
+            <layer name="bPlace" color="7" number="22" visible="yes" active="yes" fill="1"/>
+            <layer name="tNames" color="7" number="25" visible="yes" active="yes" fill="1"/>
+            <layer name="bNames" color="7" number="26" visible="yes" active="yes" fill="1"/>
+            <layer name="tValues" color="7" number="27" visible="yes" active="yes" fill="1"/>
+            <layer name="bValues" color="7" number="28" visible="yes" active="yes" fill="1"/>
+            <layer name="tStop" color="7" number="29" visible="yes" active="yes" fill="1"/>
+            <layer name="bStop" color="7" number="30" visible="yes" active="yes" fill="1"/>
+            <layer name="tCream" color="7" number="31" visible="yes" active="yes" fill="1"/>
+            <layer name="bCream" color="7" number="32" visible="yes" active="yes" fill="1"/>
+            <layer name="tKeepout" color="4" number="39" visible="yes" active="yes" fill="1"/>
+            <layer name="bKeepout" color="4" number="40" visible="yes" active="yes" fill="1"/>
+            <layer name="tRestrict" color="0" number="41" visible="yes" active="yes" fill="1"/>
+            <layer name="bRestrict" color="0" number="42" visible="yes" active="yes" fill="1"/>
+            <layer name="tDocu" color="7" number="51" visible="yes" active="yes" fill="1"/>
+            <layer name="bDocu" color="7" number="52" visible="yes" active="yes" fill="1"/>
+            <layer name="Nets" color="2" number="91" visible="yes" active="yes" fill="1"/>
+            <layer name="Busses" color="1" number="92" visible="yes" active="yes" fill="1"/>
+            <layer name="Pins" color="2" number="93" visible="yes" active="yes" fill="1"/>
+            <layer name="Symbols" color="4" number="94" visible="yes" active="yes" fill="1"/>
+            <layer name="Names" color="7" number="95" visible="yes" active="yes" fill="1"/>
+            <layer name="Values" color="7" number="96" visible="yes" active="yes" fill="1"/>
+            <layer name="Info" color="7" number="97" visible="yes" active="yes" fill="1"/>
+            <layer name="Guide" color="6" number="98" visible="yes" active="yes" fill="1"/>
+        </layers>
+        <library name="Upverter Library">
+            <description>Upverter Parts Library
+
+Created by Upverter.com</description>
+            <packages>
+                <package name="DIODES_2N7002K-7_0">
+                    <description>N-Channel Enhancement Mode MOSFET 60V 380mA 370mW SOT23</description>
+                    <wire layer="51" y2="0.7" width="0.15" x2="-1.5" y1="-0.7" x1="-1.5"/>
+                    <wire layer="51" y2="0.7" width="0.15" x2="1.5" y1="0.7" x1="-1.5"/>
+                    <wire layer="51" y2="-0.7" width="0.15" x2="1.5" y1="0.7" x1="1.5"/>
+                    <wire layer="51" y2="-0.7" width="0.15" x2="-1.5" y1="-0.7" x1="1.5"/>
+                    <wire layer="39" y2="1.55" width="0.1" x2="-1.6" y1="-1.55" x1="-1.6"/>
+                    <wire layer="39" y2="1.55" width="0.1" x2="1.6" y1="1.55" x1="-1.6"/>
+                    <wire layer="39" y2="-1.55" width="0.1" x2="1.6" y1="1.55" x1="1.6"/>
+                    <wire layer="39" y2="-1.55" width="0.1" x2="-1.6" y1="-1.55" x1="1.6"/>
+                    <wire layer="21" y2="0.7" width="0.15" x2="-0.775" y1="0.7" x1="-1.5"/>
+                    <wire layer="21" y2="0.7" width="0.15" x2="1.5" y1="0.7" x1="0.775"/>
+                    <wire layer="21" y2="0.7" width="0.15" x2="1.5" y1="-0.175" x1="1.5"/>
+                    <wire layer="21" y2="0.7" width="0.15" x2="-1.5" y1="-0.175" x1="-1.5"/>
+                    <text layer="25" align="bottom-left" y="-0.8" x="-1.875" rot="R90" size="1.0">&gt;NAME</text>
+                    <smd layer="1" thermals="yes" name="1" stop="yes" roundness="0" dx="0.8" dy="0.9" y="1.0" x="0.0" rot="R0" cream="yes"/>
+                    <smd layer="1" thermals="yes" name="2" stop="yes" roundness="0" dx="0.8" dy="0.9" y="-1.0" x="-0.95" rot="R0" cream="yes"/>
+                    <smd layer="1" thermals="yes" name="3" stop="yes" roundness="0" dx="0.8" dy="0.9" y="-1.0" x="0.95" rot="R0" cream="yes"/>
+                </package>
+            </packages>
+            <symbols>
+                <symbol name="DIODES_2N7002K-7_0_0">
+                    <description>N-Channel Enhancement Mode MOSFET 60V 380mA 370mW SOT23</description>
+                    <wire layer="94" y2="-2.54" width="0.508" x2="1.016" y1="-7.62" x1="1.016"/>
+                    <wire layer="94" y2="-2.54" width="0.508" x2="1.778" y1="-3.556" x1="1.778"/>
+                    <wire layer="94" y2="-7.112" width="0.508" x2="5.08" y1="-7.112" x1="1.778"/>
+                    <wire layer="94" y2="-3.048" width="0.508" x2="5.08" y1="-3.048" x1="1.778"/>
+                    <wire layer="94" y2="-5.08" width="0.508" x2="5.08" y1="-5.08" x1="2.54"/>
+                    <wire layer="94" y2="-4.318" width="0.508" x2="3.556" y1="-5.08" x1="2.286"/>
+                    <wire layer="94" y2="-5.842" width="0.508" x2="3.556" y1="-5.08" x1="2.286"/>
+                    <wire layer="94" y2="-5.842" width="0.508" x2="3.556" y1="-4.318" x1="3.556"/>
+                    <wire layer="94" y2="-5.588" width="0.508" x2="3.302" y1="-4.826" x1="3.302"/>
+                    <wire layer="94" y2="-7.62" width="0.508" x2="1.778" y1="-6.604" x1="1.778"/>
+                    <wire layer="94" y2="-5.588" width="0.508" x2="1.778" y1="-4.572" x1="1.778"/>
+                    <wire layer="94" y2="-7.112" width="0.508" x2="6.858" y1="-7.112" x1="5.08"/>
+                    <wire layer="94" y2="-3.048" width="0.508" x2="6.858" y1="-7.112" x1="6.858"/>
+                    <wire layer="94" y2="-3.048" width="0.508" x2="5.08" y1="-3.048" x1="6.858"/>
+                    <wire layer="94" y2="-5.588" width="0.508" x2="6.35" y1="-4.572" x1="6.858"/>
+                    <wire layer="94" y2="-5.588" width="0.508" x2="7.366" y1="-5.588" x1="6.35"/>
+                    <wire layer="94" y2="-4.572" width="0.508" x2="6.858" y1="-5.588" x1="7.366"/>
+                    <wire layer="94" y2="-4.572" width="0.508" x2="7.366" y1="-4.572" x1="6.858"/>
+                    <wire layer="94" y2="-4.318" width="0.508" x2="7.62" y1="-4.572" x1="7.366"/>
+                    <wire layer="94" y2="-4.572" width="0.508" x2="6.35" y1="-4.572" x1="6.858"/>
+                    <wire layer="94" y2="-4.826" width="0.508" x2="6.096" y1="-4.572" x1="6.35"/>
+                    <wire layer="94" y2="-5.08" width="0.15" x2="1.016" y1="-5.08" x1="0.0"/>
+                    <wire layer="94" y2="-5.08" width="0.15" x2="5.08" y1="-5.08" x1="5.08"/>
+                    <wire layer="94" y2="-3.048" width="0.15" x2="5.08" y1="-2.54" x1="5.08"/>
+                    <text layer="95" align="top-left" y="-2.54" x="10.922" rot="R0" size="2.54">&gt;NAME</text>
+                    <text layer="95" align="top-left" y="-5.334" x="10.922" rot="R0" size="2.54">2N7002K-7</text>
+                    <pin direction="pas" name="G" visible="pad" length="middle" y="-5.08" x="-5.08"/>
+                    <pin direction="pas" name="S" visible="pad" length="middle" y="-10.16" x="5.08" rot="R90"/>
+                    <pin direction="pas" name="D" visible="pad" length="middle" y="2.54" x="5.08" rot="R270"/>
+                    <circle y="-3.048" x="5.08" layer="94" radius="0.254" width="0.254"/>
+                    <circle y="-7.112" x="5.08" layer="94" radius="0.254" width="0.254"/>
+                </symbol>
+            </symbols>
+            <devicesets>
+                <deviceset prefix="Q" name="DIODES_2N7002K-7">
+                    <description>N-Channel Enhancement Mode MOSFET 60V 380mA 370mW SOT23</description>
+                    <gates>
+                        <gate name="G$0" symbol="DIODES_2N7002K-7_0_0" x="0"/>
+                    </gates>
+                    <devices>
+                        <device name="DIODES_2N7002K-7_0_0" package="DIODES_2N7002K-7_0">
+                            <connects>
+                                <connect gate="G$0" pad="1" pin="D"/>
+                                <connect gate="G$0" pad="2" pin="G"/>
+                                <connect gate="G$0" pad="3" pin="S"/>
+                            </connects>
+                            <technologies>
+                                <technology>
+                                    <attribute name="mouser_part_number" value="621-2N7002K-7"/>
+                                    <attribute name="mfg_package_ident_rev" value="0"/>
+                                    <attribute name="mfg_package_ident_date" value="30/01/2017"/>
+                                    <attribute name="temperature_range_high" value="+150°C"/>
+                                    <attribute name="MPN" value="2N7002K-7"/>
+                                    <attribute name="digikey_description" value="TRANS N-Channel 60V 380mA (Ta) 370mW (Ta) Surface Mount SOT-23-3"/>
+                                    <attribute name="digikey_part_number" value="2N7002K-7DICT-ND"/>
+                                    <attribute name="prefix" value="Q"/>
+                                    <attribute name="datasheet" value="https://www.diodes.com/assets/Datasheets/ds30896.pdf"/>
+                                    <attribute name="lead_free" value="yes"/>
+                                    <attribute name="mfg_package_ident" value="2N7002K-7"/>
+                                    <attribute name="temperature_range_low" value="-55°C"/>
+                                    <attribute name="rohs" value="yes"/>
+                                    <attribute name="centroid_not_specified" value="No"/>
+                                    <attribute name="MF" value="Diodes"/>
+                                    <attribute name="package" value="SOT23-3"/>
+                                </technology>
+                            </technologies>
+                        </device>
+                    </devices>
+                </deviceset>
+            </devicesets>
+        </library>
+    </drawing>
+</eagle>
