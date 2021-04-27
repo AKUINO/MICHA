@@ -4399,12 +4399,6 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 <text x="-2.54" y="-5.08" size="1.778" layer="96" rot="R90">&gt;VALUE</text>
 <pin name="+12V" x="0" y="-2.54" visible="off" length="short" direction="sup" rot="R90"/>
 </symbol>
-<symbol name="+3V3" urn="urn:adsk.eagle:symbol:26950/1" library_version="1">
-<wire x1="1.27" y1="-1.905" x2="0" y2="0" width="0.254" layer="94"/>
-<wire x1="0" y1="0" x2="-1.27" y2="-1.905" width="0.254" layer="94"/>
-<text x="-2.54" y="-5.08" size="1.778" layer="96" rot="R90">&gt;VALUE</text>
-<pin name="+3V3" x="0" y="-2.54" visible="off" length="short" direction="sup" rot="R90"/>
-</symbol>
 <symbol name="VDD" urn="urn:adsk.eagle:symbol:26943/1" library_version="1">
 <wire x1="1.27" y1="-1.905" x2="0" y2="0" width="0.254" layer="94"/>
 <wire x1="0" y1="0" x2="-1.27" y2="-1.905" width="0.254" layer="94"/>
@@ -4419,19 +4413,6 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 <description>&lt;b&gt;SUPPLY SYMBOL&lt;/b&gt;</description>
 <gates>
 <gate name="1" symbol="+12V" x="0" y="0"/>
-</gates>
-<devices>
-<device name="">
-<technologies>
-<technology name=""/>
-</technologies>
-</device>
-</devices>
-</deviceset>
-<deviceset name="+3V3" urn="urn:adsk.eagle:component:26981/1" prefix="+3V3" library_version="1">
-<description>&lt;b&gt;SUPPLY SYMBOL&lt;/b&gt;</description>
-<gates>
-<gate name="G$1" symbol="+3V3" x="0" y="0"/>
 </gates>
 <devices>
 <device name="">
@@ -13539,13 +13520,9 @@ www.irf.com&lt;p&gt;
 <part name="AN" library="MA01_pinHeader" deviceset="MA01_PINHEADER" device=""/>
 <part name="GND35" library="supply1" deviceset="GND" device=""/>
 <part name="GND36" library="supply1" deviceset="GND" device=""/>
-<part name="+3V1" library="supply1" library_urn="urn:adsk.eagle:library:371" deviceset="+3V3" device=""/>
-<part name="+3V2" library="supply1" library_urn="urn:adsk.eagle:library:371" deviceset="+3V3" device=""/>
 <part name="P+8" library="supply1" deviceset="+5V" device=""/>
 <part name="C14" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-EU" device="C1206" package3d_urn="urn:adsk.eagle:package:23618/2" value="100nF"/>
 <part name="GND37" library="supply1" deviceset="GND" device=""/>
-<part name="C15" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-EU" device="C1206" package3d_urn="urn:adsk.eagle:package:23618/2" value="100nF"/>
-<part name="GND38" library="supply1" deviceset="GND" device=""/>
 <part name="U2" library="mikrobus_lib" deviceset="MIKROE_CLICK_UPGRADE" device=""/>
 <part name="R10" library="resistor" deviceset="R-EU_" device="R1206" value="1k"/>
 <part name="GND10" library="supply1" deviceset="GND" device=""/>
@@ -13590,7 +13567,7 @@ www.irf.com&lt;p&gt;
 <part name="GND44" library="supply1" deviceset="GND" device=""/>
 <part name="Z10" library="Zener_SMA" deviceset="ZENER_SMA" device="" value="3,3V"/>
 <part name="GND45" library="supply1" deviceset="GND" device=""/>
-<part name="C16" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-EU" device="C1206" package3d_urn="urn:adsk.eagle:package:23618/2" value="100nF"/>
+<part name="C15" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="C-EU" device="C1206" package3d_urn="urn:adsk.eagle:package:23618/2" value="100nF"/>
 <part name="GND46" library="supply1" deviceset="GND" device=""/>
 <part name="R24" library="resistor" deviceset="R-EU_" device="R1206" value="33"/>
 <part name="R25" library="resistor" deviceset="R-EU_" device="R1206" value="33"/>
@@ -13865,12 +13842,6 @@ www.irf.com&lt;p&gt;
 <instance part="GND36" gate="1" x="50.8" y="22.86" smashed="yes">
 <attribute name="VALUE" x="48.26" y="20.32" size="1.778" layer="96"/>
 </instance>
-<instance part="+3V1" gate="G$1" x="266.7" y="223.52" smashed="yes">
-<attribute name="VALUE" x="269.24" y="226.06" size="1.778" layer="96" rot="R180"/>
-</instance>
-<instance part="+3V2" gate="G$1" x="43.18" y="38.1" smashed="yes">
-<attribute name="VALUE" x="45.72" y="40.64" size="1.778" layer="96" rot="R180"/>
-</instance>
 <instance part="P+8" gate="1" x="101.6" y="38.1" smashed="yes">
 <attribute name="VALUE" x="104.14" y="40.64" size="1.778" layer="96" rot="R180"/>
 </instance>
@@ -13880,13 +13851,6 @@ www.irf.com&lt;p&gt;
 </instance>
 <instance part="GND37" gate="1" x="101.6" y="22.86" smashed="yes">
 <attribute name="VALUE" x="99.06" y="20.32" size="1.778" layer="96"/>
-</instance>
-<instance part="C15" gate="G$1" x="43.18" y="30.48" smashed="yes">
-<attribute name="NAME" x="38.1" y="30.607" size="1.778" layer="95"/>
-<attribute name="VALUE" x="35.814" y="25.527" size="1.778" layer="96"/>
-</instance>
-<instance part="GND38" gate="1" x="43.18" y="22.86" smashed="yes">
-<attribute name="VALUE" x="40.64" y="20.32" size="1.778" layer="96"/>
 </instance>
 <instance part="U2" gate="G$1" x="73.66" y="53.34" smashed="yes">
 <attribute name="NAME" x="58.42" y="71.882" size="1.778" layer="94"/>
@@ -14042,7 +14006,7 @@ www.irf.com&lt;p&gt;
 <instance part="GND45" gate="1" x="243.84" y="81.28" smashed="yes">
 <attribute name="VALUE" x="241.3" y="78.74" size="1.778" layer="96"/>
 </instance>
-<instance part="C16" gate="G$1" x="175.26" y="60.96" smashed="yes">
+<instance part="C15" gate="G$1" x="175.26" y="60.96" smashed="yes">
 <attribute name="NAME" x="176.784" y="61.341" size="1.778" layer="95"/>
 <attribute name="VALUE" x="176.784" y="56.261" size="1.778" layer="96"/>
 </instance>
@@ -14353,10 +14317,6 @@ www.irf.com&lt;p&gt;
 <pinref part="C14" gate="G$1" pin="2"/>
 </segment>
 <segment>
-<pinref part="GND38" gate="1" pin="GND"/>
-<pinref part="C15" gate="G$1" pin="2"/>
-</segment>
-<segment>
 <pinref part="U2" gate="G$1" pin="GND2"/>
 <wire x1="91.44" y1="33.02" x2="93.98" y2="33.02" width="0.1524" layer="91"/>
 <pinref part="GND35" gate="1" pin="GND"/>
@@ -14465,7 +14425,7 @@ www.irf.com&lt;p&gt;
 </segment>
 <segment>
 <pinref part="GND46" gate="1" pin="GND"/>
-<pinref part="C16" gate="G$1" pin="2"/>
+<pinref part="C15" gate="G$1" pin="2"/>
 </segment>
 </net>
 <net name="+5V" class="0">
@@ -14491,7 +14451,7 @@ www.irf.com&lt;p&gt;
 <pinref part="U3" gate="A" pin="V+"/>
 <wire x1="160.02" y1="63.5" x2="175.26" y2="63.5" width="0.1524" layer="91"/>
 <wire x1="175.26" y1="63.5" x2="175.26" y2="68.58" width="0.1524" layer="91"/>
-<pinref part="C16" gate="G$1" pin="1"/>
+<pinref part="C15" gate="G$1" pin="1"/>
 <junction x="175.26" y="63.5"/>
 </segment>
 <segment>
@@ -15107,23 +15067,6 @@ www.irf.com&lt;p&gt;
 <pinref part="U2" gate="G$1" pin="RST"/>
 <wire x1="53.34" y1="63.5" x2="48.26" y2="63.5" width="0.1524" layer="91"/>
 <label x="48.006" y="64.262" size="1.778" layer="95" rot="R180"/>
-</segment>
-</net>
-<net name="+3V3" class="0">
-<segment>
-<pinref part="K1" gate="G$1" pin="1"/>
-<pinref part="+3V1" gate="G$1" pin="+3V3"/>
-<wire x1="266.7" y1="215.9" x2="266.7" y2="220.98" width="0.1524" layer="91"/>
-</segment>
-<segment>
-<pinref part="+3V2" gate="G$1" pin="+3V3"/>
-<wire x1="43.18" y1="33.02" x2="43.18" y2="35.56" width="0.1524" layer="91"/>
-<pinref part="C15" gate="G$1" pin="1"/>
-<pinref part="U2" gate="G$1" pin="3V3"/>
-<wire x1="53.34" y1="38.1" x2="48.26" y2="38.1" width="0.1524" layer="91"/>
-<wire x1="48.26" y1="38.1" x2="48.26" y2="33.02" width="0.1524" layer="91"/>
-<wire x1="48.26" y1="33.02" x2="43.18" y2="33.02" width="0.1524" layer="91"/>
-<junction x="43.18" y="33.02"/>
 </segment>
 </net>
 <net name="PI33" class="0">
