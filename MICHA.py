@@ -18,37 +18,39 @@ THERMI_WIRE = 0.6 # value of the twin wire resistor
 
 # Registre configuration
 # coils
-BOOT_FLAG_REG = 0x00 # register which stores the boot state
-#THERMIS_POW_REG = 0x01 # register which stores the thermistor power state
-PUMP_DIR_REG = 0x10 # register which stores the pump direction
-PUMP_POW_REG = 0x11 # register which stores the pump power state
-TANK1_REG = 0x20 # register which stores the tank 1 state
-TANK2_REG =0x21   # register which stores the tank 2 state
-SOL_HOT_REG = 0x30   # register which stores the hot water solenoid state
-SOL_COLD_REG = 0x31   # register which stores the cold water solenoid state
-VALVE1_POW_REG = 0x32   # register which stores the valve 1 power state; OPEN with chinese valve
-VALVE2_POW_REG = 0x34   # register which stores the valve 2 power state
-VALVE1_DIR_REG = 0x33   # register which stores the valve 1 direction; CLOSE with chinese valve
-VALVE2_DIR_REG = 0x35   # register which stores the valve 2 direction
+#THERMIS_POW_REG            = 0x01  # register which stores the thermistor power state
+PUMP_DIR_REG                = 0x10  # register which stores the pump direction
+PUMP_POW_REG                = 0x11  # register which stores the pump power state
+TANK1_REG                   = 0x20  # register which stores the tank 1 state
+TANK2_REG                   = 0x21  # register which stores the tank 2 state
+SOL_HOT_REG                 = 0x30  # register which stores the hot water solenoid state
+SOL_COLD_REG                = 0x31  # register which stores the cold water solenoid state
+VALVE1_POW_REG              = 0x32  # register which stores the valve 1 power state; OPEN with chinese valve
+VALVE2_POW_REG              = 0x34  # register which stores the valve 2 power state
+VALVE1_DIR_REG              = 0x33  # register which stores the valve 1 direction; CLOSE with chinese valve
+VALVE2_DIR_REG              = 0x35  # register which stores the valve 2 direction
+BOOT_FLAG_REG               = 0x40  # register which stores the boot state
+DEBUG_FLAG_REG              = 0x41  # register which stores the state of the debug mode
+
 # input registers
-GEN_STATE_REG = 0x00 # register which stores the general state of the system
-THERMI1_REG = 0x01 # register which stores the thermistor 1 value (0 - 4095)
-THERMI2_REG = 0x02 # register which stores the thermistor 2 value (0 - 4095)
-THERMI3_REG = 0x03 # register which stores the thermistor 3 value (0 - 4095)
-THERMI4_REG = 0x04 # register which stores the thermistor 4 value (0 - 4095)
-PUMP_ERR_REG = 0x10   # register which stores the error code returned by the pump regulator
-PUMP_SERVO_PERIODMAX_REG     =    0x11   # register which stores the max period of the servo signal returned by the pump
-PUMP_SERVO_PERIODMIN_REG     =    0x12   # register which stores the min period of the servo signal returned by the pump
-PUMP_SERVO_PERIODAVG_REG     =    0x13   # register which stores the period average of the servo signal returned by the pump (on some time)
-PUMP_SERVO_PERIODSTDDEV_REG  =    0x14   # register which stores the period standard deviation of the servo signal returned by the pump  (on some time)
-ERROR_CODE_REG = 0x20   # register which stores the general error codes
+GEN_STATE_REG               = 0x00  # register which stores the general state of the system
+THERMI1_REG                 = 0x01  # register which stores the thermistor 1 value (0 - 4095)
+THERMI2_REG                 = 0x02  # register which stores the thermistor 2 value (0 - 4095)
+THERMI3_REG                 = 0x03  # register which stores the thermistor 3 value (0 - 4095)
+THERMI4_REG                 = 0x04  # register which stores the thermistor 4 value (0 - 4095)
+PUMP_ERR_REG                = 0x10  # register which stores the error code returned by the pump regulator
+PUMP_SERVO_PERIODMAX_REG    = 0x11  # register which stores the max period of the servo signal returned by the pump
+PUMP_SERVO_PERIODMIN_REG    = 0x12  # register which stores the min period of the servo signal returned by the pump
+PUMP_SERVO_PERIODAVG_REG    = 0x13  # register which stores the period average of the servo signal returned by the pump (on some time)
+PUMP_SERVO_PERIODSTDDEV_REG = 0x14  # register which stores the period standard deviation of the servo signal returned by the pump  (on some time)
+ERROR_CODE_REG              = 0x20  # register which stores the general error codes
 
 # holding registers
-ID_REG = 0x00   # register which stores the modbus ID
-PUMP_SPEED_REG = 0x10   # register which stores the pump speed
-PUMP_SPEED_INC_REG = 0x11 # register which stores the increasing/decreasing value of the pump frequency
-#PUMP_SPIN_RATE_REG = 0x12   # register which stores the pump spining rate approved
-PUMP_SERVO_PULSES_REG = 0x13   # register which stores the pulse count of the servo signal returned by the pump (on some time)
+ID_REG                      = 0x00  # register which stores the modbus ID
+PUMP_SPEED_REG              = 0x10  # register which stores the pump speed
+PUMP_SPEED_INC_REG          = 0x11  # register which stores the increasing/decreasing value of the pump frequency
+#PUMP_SPIN_RATE_REG         = 0x12  # register which stores the pump spining rate approved
+PUMP_SERVO_PULSES_REG       = 0x13  # register which stores the pulse count of the servo signal returned by the pump (on some time)
 
 
 # Class to manage the MICHA board
@@ -70,6 +72,7 @@ class Micha:
         self.valve2_dir = 0
         self.general_state = 0
         self.error_code = 0
+        self.debug_flag = 0
         self.busy = False
         self.port = None
     
@@ -100,7 +103,7 @@ class Micha:
     def release_serial_port(self):
         self.busy = False
         
-    def read_pin(self,reg):
+    def read_pin(self,reg): # read a single coil register at reg address
         try:
             serial_port = self.get_serial_port()
             message = rtu.read_coils(SLAVE_ID, reg, 1)
@@ -113,7 +116,7 @@ class Micha:
             self.close_serial_port()
         return None
 
-    def write_pin(self,reg,val):
+    def write_pin(self,reg,val): # write val in a single coil register at reg address
         try:
             serial_port = self.get_serial_port()
             
@@ -126,7 +129,7 @@ class Micha:
             self.close_serial_port()
         return None
 
-    def read_input(self,reg):
+    def read_input(self,reg): # read a single input register at reg address
         try:
             serial_port = self.get_serial_port()            
             message = rtu.read_input_registers(SLAVE_ID, reg, 1)
@@ -138,7 +141,19 @@ class Micha:
             self.close_serial_port()
         return None
 
-    def write_holding(self,reg, val):
+    def read_holding(self,reg): # read a single holding register at reg address
+        try:
+            serial_port = self.get_serial_port()
+            message = rtu.read_holding_registers(SLAVE_ID, reg, 1)
+            response = rtu.send_message(message, serial_port)
+            self.release_serial_port()
+            return response[0]
+        except:
+            traceback.print_exc()
+            self.close_serial_port()
+        return None
+
+    def write_holding(self,reg, val): # write val in the holding register at reg address
         try:
             serial_port = self.get_serial_port()            
             message = rtu.write_single_register(SLAVE_ID, reg, val)
@@ -170,13 +185,13 @@ class Micha:
             if self.thermi==0: # get the value of all the thermistors
                 message = rtu.read_input_registers(SLAVE_ID, THERMI1_REG, 4)
             elif self.thermi==1: # get the thermistor 1 value
-                message = rtu.read_input_registers(SLAVE_ID, THERMI1_REG, 1)
+                message = read_input(THERMI1_REG)
             elif self.thermi==2: # get the thermistor 2 value
-                message = rtu.read_input_registers(SLAVE_ID, THERMI2_REG, 1)
+                message = rtu.read_input(THERMI2_REG)
             elif self.thermi==3: # get the thermistor 3 value
-                message = rtu.read_input_registers(SLAVE_ID, THERMI3_REG, 1)
+                message = rtu.read_input(THERMI3_REG)
             elif self.thermi==4: # get the thermistor 4 value
-                message = rtu.read_input_registers(SLAVE_ID, THERMI4_REG, 1)
+                message = rtu.read_input(THERMI4_REG)
             else:
                 print("ERROR: no thermistor was found at this value")
             
@@ -202,7 +217,7 @@ class Micha:
             try:
                 serial_port = self.get_serial_port()
                 
-                message = rtu.write_single_register(SLAVE_ID, PUMP_SPEED_REG, speed)
+                message = write_holding(PUMP_SPEED_REG, speed)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -230,7 +245,7 @@ class Micha:
         try:
             serial_port = self.get_serial_port()
             
-            message = rtu.read_holding_registers(SLAVE_ID, PUMP_SPEED_REG, 1)
+            message = read_holding(PUMP_SPEED_REG)
             response = rtu.send_message(message, serial_port)
             self.pump_speed = response[0]
             
@@ -250,11 +265,11 @@ class Micha:
             message = rtu.read_input_registers(SLAVE_ID, PUMP_SERVO_PERIODMAX_REG , 3)
             response = rtu.send_message(message, serial_port)
             
-            message = rtu.read_holding_registers(SLAVE_ID, PUMP_SERVO_PULSES_REG , 1)
+            message = read_holding(PUMP_SERVO_PULSES_REG)
             response2 = rtu.send_message(message, serial_port)
             response.append(response2[0])
             
-            message = rtu.write_single_register(SLAVE_ID, PUMP_SERVO_PULSES_REG , 0)
+            message = write_holding(PUMP_SERVO_PULSES_REG , 0)
             response3 = rtu.send_message(message, serial_port)
             
             serial_port.close()
@@ -358,6 +373,17 @@ class Micha:
     def get_error_code(self): # to get the general error code
         self.error_code = self.read_input(ERROR_CODE_REG)
         return self.error_code
+
+    def get_debug_flag(self):  # to get the debug state
+        self.debug_flag = self.read_pin(DEBUG_FLAG_REG)
+        return self.debug_flag
+
+    def set_debug_flag(self, flag=0):  # to set the debug state
+        if self.debug_flag != flag:
+            self.debug_flag = flag
+            response = self.write_pin(DEBUG_FLAG_REG, flag)
+            return response
+        return 0
     
 # test section
 if __name__ == "__main__":
@@ -782,6 +808,7 @@ if __name__ == "__main__":
         print("########## Registers ##########")
         # State
         print("Boot state flag \t= {}".format(pasto.get_boot_flag()))
+        print("Debug mode flag \t= {}".format(pasto.get_debug_flag()))
         print("General state \t= {}".format(pasto.get_general_state()))
         print("Error code \t= {}".format(pasto.get_error_code()))
         # Thermistors
