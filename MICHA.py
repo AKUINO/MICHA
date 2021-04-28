@@ -106,6 +106,7 @@ class Micha:
     def read_pin(self,reg): # read a single coil register at reg address
         try:
             serial_port = self.get_serial_port()
+            
             message = rtu.read_coils(SLAVE_ID, reg, 1)
             response = rtu.send_message(message, serial_port)
             response = response[0]
@@ -185,13 +186,13 @@ class Micha:
             if self.thermi==0: # get the value of all the thermistors
                 message = rtu.read_input_registers(SLAVE_ID, THERMI1_REG, 4)
             elif self.thermi==1: # get the thermistor 1 value
-                message = read_input(THERMI1_REG)
+                message = self.read_input(THERMI1_REG)
             elif self.thermi==2: # get the thermistor 2 value
-                message = rtu.read_input(THERMI2_REG)
+                message = self.read_input(THERMI2_REG)
             elif self.thermi==3: # get the thermistor 3 value
-                message = rtu.read_input(THERMI3_REG)
+                message = self.read_input(THERMI3_REG)
             elif self.thermi==4: # get the thermistor 4 value
-                message = rtu.read_input(THERMI4_REG)
+                message = self.read_input(THERMI4_REG)
             else:
                 print("ERROR: no thermistor was found at this value")
             
@@ -217,7 +218,7 @@ class Micha:
             try:
                 serial_port = self.get_serial_port()
                 
-                message = write_holding(PUMP_SPEED_REG, speed)
+                message = self.write_holding(PUMP_SPEED_REG, speed)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -245,7 +246,7 @@ class Micha:
         try:
             serial_port = self.get_serial_port()
             
-            message = read_holding(PUMP_SPEED_REG)
+            message = self.read_holding(PUMP_SPEED_REG)
             response = rtu.send_message(message, serial_port)
             self.pump_speed = response[0]
             
@@ -265,11 +266,11 @@ class Micha:
             message = rtu.read_input_registers(SLAVE_ID, PUMP_SERVO_PERIODMAX_REG , 3)
             response = rtu.send_message(message, serial_port)
             
-            message = read_holding(PUMP_SERVO_PULSES_REG)
+            message = self.read_holding(PUMP_SERVO_PULSES_REG)
             response2 = rtu.send_message(message, serial_port)
             response.append(response2[0])
             
-            message = write_holding(PUMP_SERVO_PULSES_REG , 0)
+            message = self.write_holding(PUMP_SERVO_PULSES_REG , 0)
             response3 = rtu.send_message(message, serial_port)
             
             serial_port.close()

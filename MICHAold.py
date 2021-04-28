@@ -22,37 +22,39 @@ THERMI_WIRE = 0.6 # value of the twin wire resistor
 
 # Registre configuration
 # coils
-BOOT_FLAG_REG = 0x00 # register which stores the boot state
-#THERMIS_POW_REG = 0x01 # register which stores the thermistor power state
-PUMP_DIR_REG = 0x10 # register which stores the pump direction
-PUMP_POW_REG = 0x11 # register which stores the pump power state
-TANK1_REG = 0x20 # register which stores the tank 1 state
-TANK2_REG =0x21   # register which stores the tank 2 state
-SOL_HOT_REG = 0x30   # register which stores the hot water solenoid state
-SOL_COLD_REG = 0x31   # register which stores the cold water solenoid state
-VALVE1_POW_REG = 0x32   # register which stores the valve 1 power state
-VALVE2_POW_REG = 0x34   # register which stores the valve 2 power state
-VALVE1_DIR_REG = 0x33   # register which stores the valve 1 direction
-VALVE2_DIR_REG = 0x35   # register which stores the valve 2 direction
+#THERMIS_POW_REG            = 0x01  # register which stores the thermistor power state
+PUMP_DIR_REG                = 0x10  # register which stores the pump direction
+PUMP_POW_REG                = 0x11  # register which stores the pump power state
+TANK1_REG                   = 0x20  # register which stores the tank 1 state
+TANK2_REG                   = 0x21  # register which stores the tank 2 state
+SOL_HOT_REG                 = 0x30  # register which stores the hot water solenoid state
+SOL_COLD_REG                = 0x31  # register which stores the cold water solenoid state
+VALVE1_POW_REG              = 0x32  # register which stores the valve 1 power state; OPEN with chinese valve
+VALVE2_POW_REG              = 0x34  # register which stores the valve 2 power state
+VALVE1_DIR_REG              = 0x33  # register which stores the valve 1 direction; CLOSE with chinese valve
+VALVE2_DIR_REG              = 0x35  # register which stores the valve 2 direction
+BOOT_FLAG_REG               = 0x40  # register which stores the boot state
+DEBUG_FLAG_REG              = 0x41  # register which stores the state of the debug mode
+
 # input registers
-GEN_STATE_REG = 0x00 # register which stores the general state of the system
-THERMI1_REG = 0x01 # register which stores the thermistor 1 value (0 - 4095)
-THERMI2_REG = 0x02 # register which stores the thermistor 2 value (0 - 4095)
-THERMI3_REG = 0x03 # register which stores the thermistor 3 value (0 - 4095)
-THERMI4_REG = 0x04 # register which stores the thermistor 4 value (0 - 4095)
-PUMP_ERR_REG = 0x10   # register which stores the error code returned by the pump regulator
-PUMP_SERVO_PERIODMAX_REG     =    0x11   # register which stores the max period of the servo signal returned by the pump
-PUMP_SERVO_PERIODMIN_REG     =    0x12   # register which stores the min period of the servo signal returned by the pump
-PUMP_SERVO_PERIODAVG_REG     =    0x13   # register which stores the period average of the servo signal returned by the pump (on some time)
-PUMP_SERVO_PERIODSTDDEV_REG  =    0x14   # register which stores the period standard deviation of the servo signal returned by the pump  (on some time)
-ERROR_CODE_REG = 0x20   # register which stores the general error codes
+GEN_STATE_REG               = 0x00  # register which stores the general state of the system
+THERMI1_REG                 = 0x01  # register which stores the thermistor 1 value (0 - 4095)
+THERMI2_REG                 = 0x02  # register which stores the thermistor 2 value (0 - 4095)
+THERMI3_REG                 = 0x03  # register which stores the thermistor 3 value (0 - 4095)
+THERMI4_REG                 = 0x04  # register which stores the thermistor 4 value (0 - 4095)
+PUMP_ERR_REG                = 0x10  # register which stores the error code returned by the pump regulator
+PUMP_SERVO_PERIODMAX_REG    = 0x11  # register which stores the max period of the servo signal returned by the pump
+PUMP_SERVO_PERIODMIN_REG    = 0x12  # register which stores the min period of the servo signal returned by the pump
+PUMP_SERVO_PERIODAVG_REG    = 0x13  # register which stores the period average of the servo signal returned by the pump (on some time)
+PUMP_SERVO_PERIODSTDDEV_REG = 0x14  # register which stores the period standard deviation of the servo signal returned by the pump  (on some time)
+ERROR_CODE_REG              = 0x20  # register which stores the general error codes
 
 # holding registers
-ID_REG = 0x00   # register which stores the modbus ID
-PUMP_SPEED_REG = 0x10   # register which stores the pump speed
-PUMP_SPEED_INC_REG = 0x11 # register which stores the increasing/decreasing value of the pump frequency
-#PUMP_SPIN_RATE_REG = 0x12   # register which stores the pump spining rate approved
-PUMP_SERVO_PULSES_REG = 0x13   # register which stores the pulse count of the servo signal returned by the pump (on some time)
+ID_REG                      = 0x00  # register which stores the modbus ID
+PUMP_SPEED_REG              = 0x10  # register which stores the pump speed
+PUMP_SPEED_INC_REG          = 0x11  # register which stores the increasing/decreasing value of the pump frequency
+#PUMP_SPIN_RATE_REG         = 0x12  # register which stores the pump spining rate approved
+PUMP_SERVO_PULSES_REG       = 0x13  # register which stores the pulse count of the servo signal returned by the pump (on some time)
 
 
 # Class to manage the MICHA board
@@ -63,6 +65,7 @@ class Micha:
         self.pump_speed = 0
         self.pump_dir = 0
         self.pump_power = 0
+        self.pump_speed_step = 0
         self.tank1 = 0
         self.tank2 = 0
         self.sol_hot = 0
@@ -73,6 +76,7 @@ class Micha:
         self.valve2_dir = 0
         self.general_state = 0
         self.error_code = 0
+        self.debug_flag = 0
     
     def get_boot_flag(self): # to get the boot state
         try:
@@ -96,6 +100,36 @@ class Micha:
                 serial_port = get_serial_port()
                 
                 message = rtu.write_single_coil(SLAVE_ID, BOOT_FLAG_REG, flag)
+                response = rtu.send_message(message, serial_port)
+                
+                serial_port.close()
+            except:
+                traceback.print_exc()
+            return response
+        return 0
+    
+    def get_debug_mode(self): # to get the boot state
+        try:
+            serial_port = get_serial_port()
+            
+            message = rtu.read_coils(SLAVE_ID, DEBUG_FLAG_REG, 1)
+            response = rtu.send_message(message, serial_port)
+            self.debug_flag = response[0]
+            
+            serial_port.close()
+        except:
+            traceback.print_exc()
+            
+        return self.debug_flag
+    
+    def set_debug_mode(self,flag=0): # to set the boot state
+        if self.debug_flag != flag:
+            self.debug_flag = flag
+            
+            try:
+                serial_port = get_serial_port()
+                
+                message = rtu.write_single_coil(SLAVE_ID, DEBUG_FLAG_REG, flag)
                 response = rtu.send_message(message, serial_port)
                 
                 serial_port.close()
@@ -163,6 +197,22 @@ class Micha:
             return response
         return 0
     
+    def set_pump_speed_step(self,step=0): # to set the speed incrementation/decrementation of the pump
+        if self.pump_speed_step!=step:
+            self.pump_speed_step = step
+            
+            try:
+                serial_port = get_serial_port()
+                
+                message = rtu.write_single_register(SLAVE_ID, PUMP_SPEED_INC_REG, step)
+                response = rtu.send_message(message, serial_port)
+                
+                serial_port.close()
+            except:
+                traceback.print_exc()
+            return response
+        return 0
+    
     def set_pump_dir(self,dir=0): # to set the direction of the pump
         if self.pump_dir!=dir:
             self.pump_dir = dir
@@ -221,6 +271,20 @@ class Micha:
             traceback.print_exc()
             
         return self.pump_speed
+    
+    def get_pump_speed_step(self): # to get the speed of the pump (stored in the register), returns the pump speed
+        try:
+            serial_port = get_serial_port()
+            
+            message = rtu.read_holding_registers(SLAVE_ID, PUMP_SPEED_INC_REG, 1)
+            response = rtu.send_message(message, serial_port)
+            self.pump_speed_step = response[0]
+            
+            serial_port.close()
+        except:
+            traceback.print_exc()
+            
+        return self.pump_speed_step
     
     def get_pump_error(self): # to get the error code returned by the pump regulator, returns the pump error code
         try:
@@ -611,11 +675,12 @@ if __name__ == "__main__":
             print(" 1 - Power\n",
                   "2 - Speed\n",
                   "3 - Direction\n",
-                  "4 - Get the speed return by the servo\n",
-                  "5 - Get the error code return by the regulator\n",
+                  "4 - Acceleration step\n",
+                  "5 - Get the speed return by the servo\n",
+                  "6 - Get the error code return by the driver\n",
                   "0 - Back\n")
             
-            choice = menu_choice(0,5)
+            choice = menu_choice(0,6)
             print("\n")
             
             # If the choice is valid
@@ -654,7 +719,7 @@ if __name__ == "__main__":
                             updatedSpeed = input("Enter a new speed: ")
                             pasto.set_pump_speed(int(updatedSpeed))
                             choice = '-1'
-                    choice = '4'
+                    choice = '5'
                 if choice=='3':
                     print("### Direction ###")
                     
@@ -676,6 +741,20 @@ if __name__ == "__main__":
                         print("Backflow mode ON")
                     choice = '2'
                 if choice=='4':
+                    while choice!='0':
+                        print("### Acceleration step ###")
+                        print("\nCurrent step = {}\n".format(pasto.get_pump_speed_step()))
+                        print(" 1 - Modify\n",
+                              "0 - Back\n")
+                        
+                        choice = menu_choice(0,1) 
+                        print("\n")
+                        
+                        if choice!='0':
+                            updatedStep = input("Enter a new step: ")
+                            pasto.set_pump_speed_step(int(updatedStep))
+                            choice = '-1'
+                if choice=='5':
                     cursp = pasto.get_pump_speed()
                     servol = pasto.get_pump_servo();
                     # spmin = 99999999
@@ -697,11 +776,11 @@ if __name__ == "__main__":
                     # print ("Min=%d, Max=%d, Avg=%d Hz, Var²=%f" % (spmin,spmax, spavg, stress) )
                     # if cursp:
                         # print ("Min=%f1%%, Max=%f1%%, Avg=%f1%%, stress=%f1%%" % (spmin*100.0/cursp-100.0,spmax*100.0/cursp-100.0, spavg*100.0/cursp-100.0, 100.0*stress/cursp ) )
-                    print ("Min=%d, Max=%d, Avg=%d Hz, Pulse²=%d" % (servol[1],servol[0], servol[2], servol[3]) )
+                    print ("Min=%d, Max=%d, Avg=%d Hz, Pulse²=%d\n" % (servol[1],servol[0], servol[2], servol[3]) )
                     if cursp:
-                        print ("Min=%f1%%, Max=%f1%%, Avg=%f1%%" % (servol[1]*100.0/cursp-100.0,servol[0]*100.0/cursp-100.0, servol[2]*100.0/cursp-100.0 ) )
-                if choice=='5':
-                    print("Error returned by the regulator = {}".format(pasto.get_pump_error()))
+                        print ("Min=%f1%%, Max=%f1%%, Avg=%f1%%\n" % (servol[1]*100.0/cursp-100.0,servol[0]*100.0/cursp-100.0, servol[2]*100.0/cursp-100.0 ) )
+                if choice=='6':
+                    print("Error returned by the driver = {}\n".format(pasto.get_pump_error()))
                 
                 choice= '-1'
         
@@ -937,12 +1016,53 @@ if __name__ == "__main__":
                 
         return 0
 
-    def subMenu_generalState():
-        """Display the error code and the general state of the system"""
+    def subMenu_miscellaneous():
+        """For the other functions of the system"""
         
-        print("########## General state ##########")
-        print("General state = {}".format(pasto.get_general_state()))
-        print("Error code = {}\n".format(pasto.get_error_code()))
+        choice = '-1'
+        
+        while choice!='0':
+            print("########## Miscellaneous ##########")
+            print(" 1 - General state\n",
+                  "2 - Error code\n",
+                  "3 - Debug mode\n",
+                  "0 - Back\n")
+            
+            choice = menu_choice(0,3)
+            print("\n")
+            
+            # If the choice is valid
+            if choice!='0':
+                if choice=='1':
+                    print("General state = {}".format(pasto.get_general_state()))
+                    input()
+                elif choice=='2':
+                    print("Error code = {}\n".format(pasto.get_error_code()))
+                    input()
+                elif choice=='3':
+                    print("### Debug mode ###")
+                    
+                    if pasto.get_debug_mode()==0:
+                        print(" 0 - (Disable)\n",
+                              "1 - Enable\n")
+                    elif pasto.get_debug_mode()==1:
+                        print(" 0 - Disable\n",
+                              "1 - (Enable)\n")
+                    
+                    choice = menu_choice(0,1) 
+                    print("\n")
+                    
+                    if choice=='0':
+                        pasto.set_debug_mode(0)
+                        print("Debug mode is disabled")
+                    elif choice=='1':
+                        pasto.set_debug_mode(1)
+                        print("Debug mode is enabled")
+                    input()
+            
+                choice = '-1'
+                
+        return 0
         
         input()
 
@@ -952,8 +1072,9 @@ if __name__ == "__main__":
         print("########## Registers ##########")
         # State
         print("Boot state flag \t= {}".format(pasto.get_boot_flag()))
-        print("General state \t= {}".format(pasto.get_general_state()))
-        print("Error code \t= {}".format(pasto.get_error_code()))
+        print("Debug state flag \t= {}".format(pasto.get_debug_mode()))
+        print("General state \t\t= {}".format(pasto.get_general_state()))
+        print("Error code \t\t= {}".format(pasto.get_error_code()))
         # Thermistors
         i = 1
         for value in pasto.get_thermi():
@@ -962,6 +1083,7 @@ if __name__ == "__main__":
         # Pompe
         print("Pum power \t\t= {}".format(pasto.get_pump_power()))
         print("Pump speed \t\t= {}".format(pasto.get_pump_speed()))
+        print("Pump speed step \t= {}".format(pasto.get_pump_speed_step()))
         print("Pump direction \t\t= {}".format(pasto.get_pump_dir()))
         print("Pump servo \t\t= {}".format(pasto.get_pump_servo()))
         print("Pump error \t\t= {}".format(pasto.get_pump_error()))
@@ -979,7 +1101,7 @@ if __name__ == "__main__":
     ################ main program ################
 
     choice = '-1'
-    menuPrincipal = {'1':subMenu_thermis, '2':subMenu_pump, '3':subMenu_tanks, '4':subMenu_valvesSol, '5':subMenu_generalState, '6':subMenu_registers}
+    menuPrincipal = {'1':subMenu_thermis, '2':subMenu_pump, '3':subMenu_tanks, '4':subMenu_valvesSol, '5':subMenu_miscellaneous, '6':subMenu_registers}
     pasto = Micha()
 
     while choice!='0':
@@ -989,7 +1111,7 @@ if __name__ == "__main__":
               "2 - Pump\n",
               "3 - Tanks\n",
               "4 - Valves/solenoids\n",
-              "5 - General state\n",
+              "5 - Miscellaneous\n",
               "6 - All registers\n",
               "0 - Exit\n")
         
