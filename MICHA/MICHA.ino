@@ -11,6 +11,10 @@
 // WARNING: please verify the output states match with your hardware states (is it the same logic?)
 //
 // Version notes:
+//  - v1.1.5:
+//          - speed_step as a variable (instead of define)
+//          - modification of speed_step by PUMP_SPEED_INC_REG implemented
+//          - debug_flag moves in MICHA_configuration.h
 //  - v1.1.4:
 //          - pump servo signal decoding implemented
 //          - debug management implemented (DEBUG_FLAG_REG)
@@ -102,7 +106,6 @@ boolean speed_flag = false;
 boolean stopped = true;
 
 // variables diverses
-boolean debug_flag = false;        // debug mode enable (with debug_flag false, less Serial.print, better timing...)
 uint32_t time_ref1 = 0;           // thermistor reading reference time
 uint32_t time_ref2 = 0;           // reference time for other operations
 uint32_t time_ref3 = 0;           // last millis when storing pump servo count
@@ -258,24 +261,24 @@ void setup()
   ModbusRTUServer.configureHoldingRegisters(0x00, 32);
 
   // Default assignment of registers
-  ModbusRTUServer.coilWrite(THERMIS_POW_REG,0);                   // thermistors - power: OFF
-  ModbusRTUServer.coilWrite(PUMP_DIR_REG,0);                      // pump - direction: 0
-  ModbusRTUServer.coilWrite(PUMP_POW_REG,0);                      // pump - power: OFF
-  ModbusRTUServer.coilWrite(TANK1_REG,0);                         // tank 1: OFF
-  ModbusRTUServer.coilWrite(TANK2_REG,0);                         // tank 2: OFF
-  ModbusRTUServer.coilWrite(SOL_HOT_REG,0);                       // solenoid hot water: 0
-  ModbusRTUServer.coilWrite(SOL_COLD_REG,0);                      // solenoid cold water: 0
-  ModbusRTUServer.coilWrite(VALVE1_POW_REG,0);                    // valve 1 - power: OFF
-  ModbusRTUServer.coilWrite(VALVE1_DIR_REG,0);                    // valve 1 - direction: 0
-  ModbusRTUServer.coilWrite(VALVE2_POW_REG,0);                    // valve 2 - power: OFF
-  ModbusRTUServer.coilWrite(VALVE2_DIR_REG,0);                    // valve 2 - direction: 0
-  ModbusRTUServer.coilWrite(BOOT_FLAG_REG,1);                     // starting flag: ON
-  ModbusRTUServer.coilWrite(DEBUG_FLAG_REG,1);                    // debug flag: ON  
-  ModbusRTUServer.inputRegisterWrite(GEN_STATE_REG,0);            // general state: 0 (no problem)
-  ModbusRTUServer.inputRegisterWrite(ERROR_CODE_REG,0);           // error code: 0
-  ModbusRTUServer.holdingRegisterWrite(ID_REG,id.id);             // modbus ID
-  ModbusRTUServer.holdingRegisterWrite(PUMP_SPEED_REG,0);         // pump - speed: 0
-  ModbusRTUServer.holdingRegisterWrite(PUMP_SPEED_INC_REG,SPEED_STEP);  // pump - speed increasing/decreasing: 2000 Hz
+  ModbusRTUServer.coilWrite(THERMIS_POW_REG,0);                         // thermistors - power: OFF
+  ModbusRTUServer.coilWrite(PUMP_DIR_REG,0);                            // pump - direction: 0
+  ModbusRTUServer.coilWrite(PUMP_POW_REG,0);                            // pump - power: OFF
+  ModbusRTUServer.coilWrite(TANK1_REG,0);                               // tank 1: OFF
+  ModbusRTUServer.coilWrite(TANK2_REG,0);                               // tank 2: OFF
+  ModbusRTUServer.coilWrite(SOL_HOT_REG,0);                             // solenoid hot water: 0
+  ModbusRTUServer.coilWrite(SOL_COLD_REG,0);                            // solenoid cold water: 0
+  ModbusRTUServer.coilWrite(VALVE1_POW_REG,0);                          // valve 1 - power: OFF
+  ModbusRTUServer.coilWrite(VALVE1_DIR_REG,0);                          // valve 1 - direction: 0
+  ModbusRTUServer.coilWrite(VALVE2_POW_REG,0);                          // valve 2 - power: OFF
+  ModbusRTUServer.coilWrite(VALVE2_DIR_REG,0);                          // valve 2 - direction: 0
+  ModbusRTUServer.coilWrite(BOOT_FLAG_REG,1);                           // starting flag: ON
+  ModbusRTUServer.coilWrite(DEBUG_FLAG_REG,debug_flag);                 // debug flag: sets by debug_flag  
+  ModbusRTUServer.inputRegisterWrite(GEN_STATE_REG,0);                  // general state: 0 (no problem)
+  ModbusRTUServer.inputRegisterWrite(ERROR_CODE_REG,0);                 // error code: 0
+  ModbusRTUServer.holdingRegisterWrite(ID_REG,id.id);                   // modbus ID
+  ModbusRTUServer.holdingRegisterWrite(PUMP_SPEED_REG,0);               // pump - speed: 0
+  ModbusRTUServer.holdingRegisterWrite(PUMP_SPEED_INC_REG,speed_step);  // pump - speed increasing/decreasing: 2000 Hz
 
   // Configuration to manage the pump speed
   pwm.setClockDivider(1,false);
@@ -391,6 +394,7 @@ void loop() {
   if (interval2 > 35) // 35 ms passed
   {
     debug_flag = ModbusRTUServer.coilRead(DEBUG_FLAG_REG);
+    speed_step = ModbusRTUServer.holdingRegisterRead(PUMP_SPEED_INC_REG);
     
     ModbusRTUServer.holdingRegisterWrite(PUMP_SERVO_PULSES_REG, pump_servo_pulseCounter);
     ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_PERIODMIN_REG, pump_servo_periodMin);
