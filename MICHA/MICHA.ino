@@ -122,6 +122,7 @@ volatile uint16_t pump_servo_periodMax = 0; // to store the period max of the pu
 volatile uint16_t pump_servo_periodMin = 65000; // to store the period min of the pump servo signal
 volatile uint16_t pump_servo_periodStdDev = 0; // to store the period standard deviation of the pump servo signal
 volatile uint32_t pump_servo_periodTotal = 0;  // to store the total of period of the pump servo signal
+uint16_t pump_servo_periodAvg = 0;  // to store the total of period of the pump servo signal
 
 //#ifdef INTERRUPTIBLE
 //uint32_t volatile flip = 0;
@@ -150,14 +151,14 @@ void int_ISR()
 {
   uint32_t now = micros();  // updates the current time variable
 
-  if( ! pump_working_flag )  // if the pump has just started, initialization of the timer and the counter
+  if ( ! pump_working_flag )  // if the pump has just started, initialization of the timer and the counter
   {
     pump_servo_pulseCounter = 0;
     pump_servo_periodMin = 65000;
     pump_servo_periodMax = 0;
     pump_servo_periodTotal = 0;
     pump_working_flag = true;
-  }else
+  } else
   {
     pump_servoInterval = now - time_ref5;
     if ( (pump_servoInterval < 16000) && (pump_servoInterval > 10) ) {
@@ -181,7 +182,7 @@ void int_ISR()
 void setup()
 {
   Serial.begin(9600);
-  delay(10000);
+  delay(SETUP_DELAY);
   
   // Storing the modbus ID of the flash memory
   id = ID_FLASH.read();
@@ -248,7 +249,7 @@ void setup()
 
 
   // Configuration and launching of the modbus server
-  if (!ModbusRTUServer.begin(id.id, 9600))      // parameters: ID=1, baudrate=9600, config=SERIAL_8N1 (8 bits, non parity, 1 bit stop)
+  if (!ModbusRTUServer.begin(id.id, BAUD_RATE))      // parameters: ID=1, baudrate=9600, config=SERIAL_8N1 (8 bits, non parity, 1 bit stop)
   {
     Serial.println("Starting of the Modbus RTU server failed.");
     while (1);
@@ -375,18 +376,20 @@ void loop() {
       Serial.print(pump_servo_periodMin);
       Serial.print(", Max=");
       Serial.print(pump_servo_periodMax);
-      Serial.print(", Avg=");
-      Serial.print(pump_servo_periodTotal/pump_servo_pulseCounter);
-      Serial.print(", Str=");
-      Serial.print((pump_servo_periodMax*pump_servo_pulseCounter*100/pump_servo_periodTotal)-100);
-      if (freq != 0) {
-        Serial.print(", Rat=");
-        uint32_t periode = 1000000/(freq*10/66);
-        Serial.println((periode*pump_servo_pulseCounter*100)/pump_servo_periodTotal);
+      if (pump_servo_pulseCounter > 0 && pump_servo_periodTotal > 0) {
+        Serial.print(", Avg=");
+        Serial.print(pump_servo_periodTotal/pump_servo_pulseCounter);
+        Serial.print(", Str=");
+        Serial.print((pump_servo_periodMax*pump_servo_pulseCounter*100/pump_servo_periodTotal)-100);
+        if (freq != 0) {
+          Serial.print(", Rat=");
+          uint32_t periode = 64000000/(freq*10);
+          Serial.print((periode*pump_servo_pulseCounter*100)/pump_servo_periodTotal);
+        }
       }
-      pump_working_flag = false;
+      Serial.println();
     }
-    
+    pump_working_flag = false; // RESET pump counters  
     get_thermis();
     time_ref1 = tps;
   }
@@ -399,7 +402,7 @@ void loop() {
     ModbusRTUServer.holdingRegisterWrite(PUMP_SERVO_PULSES_REG, pump_servo_pulseCounter);
     ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_PERIODMIN_REG, pump_servo_periodMin);
     ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_PERIODMAX_REG, pump_servo_periodMax);
-    ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_PERIODAVG_REG, pump_servo_periodTotal/pump_servo_pulseCounter);
+    ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_PERIODAVG_REG, (pump_servo_pulseCounter > 0) ? pump_servo_periodTotal/pump_servo_pulseCounter : 0);
     //ModbusRTUServer.inputRegisterWrite(PUMP_SERVO_PERIODSTDDEV_REG, pump_servo_periodAvg);
 
     ModbusRTUServer.poll(); // scans if a command is coming from the master
@@ -647,24 +650,23 @@ void manage_pump()
     }
   }
 
-  if(digitalRead(PUMP_DIR_PIN)!=pump_dir)
-  {
-    pwm.timer(1,1,0xFFFFFF,false);
-    pwm.analogWrite(PUMP_SPEED_PIN,0);
-    if (debug_flag) {
-      Serial.print("Pump direction=");
-      Serial.print(pump_dir);
-      Serial.println(" (modified)");
-    }
-    digitalWrite(PUMP_DIR_PIN,pump_dir);
-  }
-
  int frequency_curr = 0;
  if (!stopped) {
   frequency_curr = pwm.frequency(1); // current frequency (compute by the pwm instance) 
  }
 
- if(frequency_curr!=pump_speed)
+ if ( digitalRead(PUMP_DIR_PIN)!=pump_dir )
+  {
+    if (debug_flag) {
+      Serial.print("Pump direction=");
+      Serial.print(pump_dir);
+      Serial.println(" (modified)");
+    }
+    pump_speed = 0; // Stops before changing direction
+    speed_flag = true;
+  }
+
+ if (frequency_curr!=pump_speed )
   {
     if (debug_flag) {
       Serial.print("Pump speed=");
@@ -674,7 +676,7 @@ void manage_pump()
     speed_flag = true;
   }
 
-  if(speed_flag)
+ if(speed_flag)
   { 
     if(frequency_curr < pump_speed)  // if the speed must increase
     {
@@ -698,8 +700,6 @@ void manage_pump()
       }
       if(frequency_curr <= 1000) // force to 0 Hz
       {
-        pwm.timer(1,1,0xFFFFFF,false);
-        pwm.analogWrite(PUMP_SPEED_PIN,0);
         speed_flag = false;
         stopped = true;
       } else
@@ -715,6 +715,11 @@ void manage_pump()
         pwm.analogWrite(PUMP_SPEED_PIN,500); //duty-cycle = 50%
         stopped = false;
       }
+    }
+    if (stopped) {
+      pwm.timer(1,1,0xFFFFFF,false);
+      pwm.analogWrite(PUMP_SPEED_PIN,0);
+      digitalWrite(PUMP_DIR_PIN,pump_dir);
     }
   }
 }
