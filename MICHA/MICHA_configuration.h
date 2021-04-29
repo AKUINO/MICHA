@@ -7,7 +7,10 @@
 #define ID  1                 // default modbus ID
 uint16_t speed_step = 400;    // default speed Hz decrease/increase
 boolean debug_flag = false;   // debug mode enable flag (with debug_flag false, less Serial.print, better timing...)
-
+// ms Delay after startup before Setup
+#define SETUP_DELAY 1000
+// Modbus serial speed
+#define BAUD_RATE 19200
 
 // configuration of the relative register adresses
 // coils

@@ -53,6 +53,7 @@ PUMP_SPEED_INC_REG          = 0x11  # register which stores the increasing/decre
 PUMP_SERVO_PULSES_REG       = 0x13  # register which stores the pulse count of the servo signal returned by the pump (on some time)
 
 
+
 # Class to manage the MICHA board
 class Micha:
     def __init__(self,device='/dev/serial0'):
@@ -84,7 +85,7 @@ class Micha:
         while not self.port: # In case of error, we reset the access to the ModBus
             try:
                 """Return a serial.Serial instance which is ready to use with a RS485 adaptor."""
-                self.port = Serial(port=self.device, baudrate=9600, parity=PARITY_NONE, stopbits=1, bytesize=8, timeout=1)
+                self.port = Serial(port=self.device, baudrate=19200, parity=PARITY_NONE, stopbits=1, bytesize=8, timeout=1)
             except:
                 traceback.print_exc()
                 self.port = None
@@ -103,10 +104,9 @@ class Micha:
     def release_serial_port(self):
         self.busy = False
         
-    def read_pin(self,reg): # read a single coil register at reg address
+    def read_pin(self,reg): # read a single coil register at reg address 
         try:
             serial_port = self.get_serial_port()
-            
             message = rtu.read_coils(SLAVE_ID, reg, 1)
             response = rtu.send_message(message, serial_port)
             response = response[0]
@@ -186,19 +186,19 @@ class Micha:
             if self.thermi==0: # get the value of all the thermistors
                 message = rtu.read_input_registers(SLAVE_ID, THERMI1_REG, 4)
             elif self.thermi==1: # get the thermistor 1 value
-                message = self.read_input(THERMI1_REG)
+                message = rtu.read_input_registers(SLAVE_ID, THERMI1_REG, 1)
             elif self.thermi==2: # get the thermistor 2 value
-                message = self.read_input(THERMI2_REG)
+                message = rtu.read_input_registers(SLAVE_ID, THERMI2_REG, 1)
             elif self.thermi==3: # get the thermistor 3 value
-                message = self.read_input(THERMI3_REG)
+                message = rtu.read_input_registers(SLAVE_ID, THERMI3_REG, 1)
             elif self.thermi==4: # get the thermistor 4 value
-                message = self.read_input(THERMI4_REG)
+                message = rtu.read_input_registers(SLAVE_ID, THERMI4_REG, 1)
             else:
                 print("ERROR: no thermistor was found at this value")
             
             response = rtu.send_message(message, serial_port)
             
-            serial_port.close()
+            self.close_serial_port()
         except:
             traceback.print_exc()
     
@@ -214,17 +214,7 @@ class Micha:
     def set_pump_speed(self,speed=0): # to set the speed of the pump
         if self.pump_speed!=speed:
             self.pump_speed = speed
-            
-            try:
-                serial_port = self.get_serial_port()
-                
-                message = self.write_holding(PUMP_SPEED_REG, speed)
-                response = rtu.send_message(message, serial_port)
-                
-                serial_port.close()
-            except:
-                traceback.print_exc()
-            return response
+            return self.write_holding(PUMP_SPEED_REG, speed)
         return 0
     
     def set_pump_dir(self,dir=0): # to set the direction of the pump
@@ -243,37 +233,29 @@ class Micha:
         return self.pump_dir
     
     def get_pump_speed(self): # to get the speed of the pump (stored in the register), returns the pump speed
-        try:
-            serial_port = self.get_serial_port()
-            
-            message = self.read_holding(PUMP_SPEED_REG)
-            response = rtu.send_message(message, serial_port)
-            self.pump_speed = response[0]
-            
-            serial_port.close()
-        except:
-            traceback.print_exc()
-            
+        self.pump_speed = self.read_holding(PUMP_SPEED_REG)
         return self.pump_speed
     
     def get_pump_error(self): # to get the error code returned by the pump regulator, returns the pump error code
         return self.read_input(PUMP_ERR_REG)
             
     def get_pump_servo(self): # to get the pump speed returned by the servo of the pump
+        response = None
         try:
             serial_port = self.get_serial_port()
             
             message = rtu.read_input_registers(SLAVE_ID, PUMP_SERVO_PERIODMAX_REG , 3)
             response = rtu.send_message(message, serial_port)
             
-            message = self.read_holding(PUMP_SERVO_PULSES_REG)
+            message = rtu.read_holding_registers(SLAVE_ID, PUMP_SERVO_PULSES_REG , 1)
             response2 = rtu.send_message(message, serial_port)
             response.append(response2[0])
             
-            message = self.write_holding(PUMP_SERVO_PULSES_REG , 0)
-            response3 = rtu.send_message(message, serial_port)
+            # Auto re-init every second...
+            #message = rtu.write_single_register(SLAVE_ID, PUMP_SERVO_PULSES_REG , 0)
+            #response3 = rtu.send_message(message, serial_port)
             
-            serial_port.close()
+            self.close_serial_port()
         except:
             traceback.print_exc()
         
@@ -452,7 +434,7 @@ if __name__ == "__main__":
                         print("Thermistor {} = {} ({:4.3f} mV)".format(i,value,(VOLTAGE_REF*value/4096)*1000))
                         i+=1
                 
-                input()
+                # input()
                 
                 choice = '-1'
         
@@ -599,7 +581,7 @@ if __name__ == "__main__":
                     elif choice=='1':
                         pasto.set_tank1(1)
                         print("Tank 1 ON")
-                    input()
+                    # input()
                 elif choice=='2':
                     print("### Tank 2 ###")
                     
@@ -619,7 +601,7 @@ if __name__ == "__main__":
                     elif choice=='1':
                         pasto.set_tank2(1)
                         print("Tank 2 ON")
-                    input()
+                    # input()
             
                 choice = '-1'
         
@@ -662,7 +644,7 @@ if __name__ == "__main__":
                     elif choice=='1':
                         pasto.set_sol_hot(1)
                         print("Hot water solenoid is opening")
-                    input()
+                    # input()
                 elif choice=='2':
                     print("### Cold water solenoid ###")
                     
@@ -682,7 +664,7 @@ if __name__ == "__main__":
                     elif choice=='1':
                         pasto.set_sol_cold(1)
                         print("Cold water solenoid is opening")
-                    input()
+                    # input()
                 elif choice=='3':
                     while choice!='0':
                         print("### Valve 1 ###")
@@ -713,7 +695,7 @@ if __name__ == "__main__":
                                 elif choice=='1':
                                     pasto.set_valve1_power(1)
                                     print("Valve 1 power ON")
-                                input()
+                                # input()
                             
                             elif choice=='2':
                                 print("### Valve 1 direction ###")
@@ -734,7 +716,7 @@ if __name__ == "__main__":
                                 elif choice=='1':
                                     pasto.set_valve1_dir(1)
                                     print("Valve 1 set in direction 2")
-                                input()
+                                # input()
                             choice = '-1'
                 elif choice=='4':
                     while choice!='0':
@@ -766,7 +748,7 @@ if __name__ == "__main__":
                                 elif choice=='1':
                                     pasto.set_valve2_power(1)
                                     print("Valve 2 power ON")
-                                input()
+                                # input()
                             
                             elif choice=='2':
                                 print("### Valve 2 direction ###")
@@ -787,7 +769,7 @@ if __name__ == "__main__":
                                 elif choice=='1':
                                     pasto.set_valve2_dir(1)
                                     print("Valve 2 set in direction 2")
-                                input()
+                                # input()
                             choice = '-1'
             
                 choice = '-1'
@@ -798,10 +780,22 @@ if __name__ == "__main__":
         """Display the error code and the general state of the system"""
         
         print("########## General state ##########")
+        print("Boot state flag \t= {}".format(pasto.get_boot_flag()))
+        print("Debug mode flag \t= {}".format(pasto.get_debug_flag()))
         print("General state = {}".format(pasto.get_general_state()))
         print("Error code = {}\n".format(pasto.get_error_code()))
-        
-        input()
+
+        choice = '9'
+        while choice!='0':
+            print(" 1 - debug ON\n",
+                      "2 - debug OFF\n",
+                      "0 - Back")
+            
+            choice = menu_choice(0,2) 
+            print("\n")
+            
+            if choice!='0':
+                pasto.set_debug_flag(choice=='1')
 
     def subMenu_registers():
         """Display the value of all the registers."""
@@ -832,8 +826,6 @@ if __name__ == "__main__":
         print("Valve 2 power \t\t= {}".format(pasto.get_valve2_power()))
         print("Valve 2 direction \t= {}".format(pasto.get_valve2_dir()))
         
-        input()
-
     ################ main program ################
 
     choice = '-1'
