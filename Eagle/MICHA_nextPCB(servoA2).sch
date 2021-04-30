@@ -7,7 +7,7 @@
 <setting keepoldvectorfont="yes"/>
 <setting verticaltext="up"/>
 </settings>
-<grid distance="0.1" unitdist="inch" unit="inch" style="lines" multiple="1" display="yes" altdistance="0.01" altunitdist="inch" altunit="inch"/>
+<grid distance="0.1" unitdist="inch" unit="inch" style="lines" multiple="1" display="no" altdistance="0.01" altunitdist="inch" altunit="inch"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="no" active="no"/>
 <layer number="2" name="Route2" color="1" fill="3" visible="no" active="no"/>
@@ -12679,13 +12679,13 @@ BUS</text>
 <wire x1="0" y1="0" x2="0" y2="43.18" width="0.127" layer="21"/>
 <wire x1="0" y1="43.18" x2="25.4" y2="43.18" width="0.127" layer="21"/>
 <wire x1="25.4" y1="43.18" x2="25.4" y2="2.54" width="0.127" layer="21"/>
-<pad name="A" x="22.424190625" y="34.16693125" drill="0.889" diameter="1.524"/>
-<pad name="P$18" x="22.424190625" y="36.70693125" drill="0.889" diameter="1.524"/>
-<pad name="B" x="22.424190625" y="39.24693125" drill="0.889" diameter="1.524"/>
-<wire x1="21.154190625" y1="32.89693125" x2="23.694190625" y2="32.89693125" width="0.1524" layer="21"/>
-<wire x1="23.694190625" y1="32.89693125" x2="23.694190625" y2="40.51693125" width="0.1524" layer="21"/>
-<wire x1="23.694190625" y1="40.51693125" x2="21.154190625" y2="40.51693125" width="0.1524" layer="21"/>
-<wire x1="21.154190625" y1="40.51693125" x2="21.154190625" y2="32.89693125" width="0.1524" layer="21"/>
+<pad name="A" x="22.174190625" y="33.99693125" drill="0.889" diameter="1.524"/>
+<pad name="P$18" x="22.174190625" y="36.53693125" drill="0.889" diameter="1.524"/>
+<pad name="B" x="22.174190625" y="39.07693125" drill="0.889" diameter="1.524"/>
+<wire x1="20.904190625" y1="32.72693125" x2="23.444190625" y2="32.72693125" width="0.1524" layer="21"/>
+<wire x1="23.444190625" y1="32.72693125" x2="23.444190625" y2="40.34693125" width="0.1524" layer="21"/>
+<wire x1="23.444190625" y1="40.34693125" x2="20.904190625" y2="40.34693125" width="0.1524" layer="21"/>
+<wire x1="20.904190625" y1="40.34693125" x2="20.904190625" y2="32.72693125" width="0.1524" layer="21"/>
 </package>
 </packages>
 <symbols>
@@ -14540,18 +14540,6 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <pinref part="C14" gate="G$1" pin="2"/>
 </segment>
 <segment>
-<pinref part="U2" gate="G$1" pin="GND2"/>
-<wire x1="91.44" y1="33.02" x2="93.98" y2="33.02" width="0.1524" layer="91"/>
-<pinref part="GND35" gate="1" pin="GND"/>
-<wire x1="93.98" y1="33.02" x2="93.98" y2="25.4" width="0.1524" layer="91"/>
-</segment>
-<segment>
-<pinref part="U2" gate="G$1" pin="GND1"/>
-<wire x1="53.34" y1="33.02" x2="50.8" y2="33.02" width="0.1524" layer="91"/>
-<pinref part="GND36" gate="1" pin="GND"/>
-<wire x1="50.8" y1="33.02" x2="50.8" y2="25.4" width="0.1524" layer="91"/>
-</segment>
-<segment>
 <pinref part="Z3" gate="G$1" pin="A"/>
 <pinref part="GND11" gate="1" pin="GND"/>
 <wire x1="33.02" y1="40.64" x2="33.02" y2="38.1" width="0.1524" layer="91"/>
@@ -14656,6 +14644,18 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <pinref part="DS4" gate="G$1" pin="A3"/>
 <wire x1="252.73" y1="124.46" x2="246.38" y2="124.46" width="0.1524" layer="91"/>
 </segment>
+<segment>
+<pinref part="U2" gate="G$1" pin="GND1"/>
+<wire x1="53.34" y1="33.02" x2="50.8" y2="33.02" width="0.1524" layer="91"/>
+<pinref part="GND36" gate="1" pin="GND"/>
+<wire x1="50.8" y1="33.02" x2="50.8" y2="25.4" width="0.1524" layer="91"/>
+</segment>
+<segment>
+<pinref part="U2" gate="G$1" pin="GND2"/>
+<wire x1="91.44" y1="33.02" x2="93.98" y2="33.02" width="0.1524" layer="91"/>
+<pinref part="GND35" gate="1" pin="GND"/>
+<wire x1="93.98" y1="33.02" x2="93.98" y2="25.4" width="0.1524" layer="91"/>
+</segment>
 </net>
 <net name="+5V" class="0">
 <segment>
@@ -14684,14 +14684,14 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <junction x="175.26" y="63.5"/>
 </segment>
 <segment>
-<pinref part="U2" gate="G$1" pin="5V"/>
-<wire x1="91.44" y1="38.1" x2="99.06" y2="38.1" width="0.1524" layer="91"/>
 <wire x1="99.06" y1="38.1" x2="99.06" y2="33.02" width="0.1524" layer="91"/>
 <pinref part="C14" gate="G$1" pin="1"/>
 <wire x1="99.06" y1="33.02" x2="101.6" y2="33.02" width="0.1524" layer="91"/>
 <pinref part="P+8" gate="1" pin="+5V"/>
 <wire x1="101.6" y1="35.56" x2="101.6" y2="33.02" width="0.1524" layer="91"/>
 <junction x="101.6" y="33.02"/>
+<pinref part="U2" gate="G$1" pin="5V"/>
+<wire x1="91.44" y1="38.1" x2="99.06" y2="38.1" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="PUMP_PAUSE_BTN" class="0">
@@ -15259,7 +15259,7 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <segment>
 <pinref part="U2" gate="G$1" pin="CS"/>
 <wire x1="53.34" y1="58.42" x2="48.26" y2="58.42" width="0.1524" layer="91"/>
-<label x="47.498" y="59.436" size="1.778" layer="95" rot="R180"/>
+<label x="47.752" y="59.436" size="1.778" layer="95" rot="R180"/>
 </segment>
 </net>
 <net name="SCK" class="0">
@@ -15271,7 +15271,7 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <segment>
 <pinref part="U2" gate="G$1" pin="SCK"/>
 <wire x1="53.34" y1="53.34" x2="48.26" y2="53.34" width="0.1524" layer="91"/>
-<label x="47.752" y="54.356" size="1.778" layer="95" rot="R180"/>
+<label x="48.006" y="54.61" size="1.778" layer="95" rot="R180"/>
 </segment>
 </net>
 <net name="S1/PWM" class="0">
@@ -15283,7 +15283,7 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <segment>
 <pinref part="U2" gate="G$1" pin="PWM"/>
 <wire x1="91.44" y1="68.58" x2="96.52" y2="68.58" width="0.1524" layer="91"/>
-<label x="97.028" y="67.818" size="1.778" layer="95"/>
+<label x="96.774" y="67.818" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="S2/INT" class="0">
@@ -15295,7 +15295,7 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <segment>
 <pinref part="U2" gate="G$1" pin="INT"/>
 <wire x1="91.44" y1="63.5" x2="96.52" y2="63.5" width="0.1524" layer="91"/>
-<label x="97.028" y="62.738" size="1.778" layer="95"/>
+<label x="97.282" y="62.992" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="S3/RST" class="0">
@@ -15307,7 +15307,7 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <segment>
 <pinref part="U2" gate="G$1" pin="RST"/>
 <wire x1="53.34" y1="63.5" x2="48.26" y2="63.5" width="0.1524" layer="91"/>
-<label x="48.006" y="64.262" size="1.778" layer="95" rot="R180"/>
+<label x="48.006" y="64.516" size="1.778" layer="95" rot="R180"/>
 </segment>
 </net>
 <net name="PI33" class="0">
@@ -15536,22 +15536,22 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 </net>
 <net name="N$1" class="0">
 <segment>
-<pinref part="U2" gate="G$1" pin="B"/>
-<wire x1="76.2" y1="76.2" x2="76.2" y2="78.74" width="0.1524" layer="91"/>
 <wire x1="76.2" y1="78.74" x2="119.38" y2="78.74" width="0.1524" layer="91"/>
 <wire x1="119.38" y1="78.74" x2="119.38" y2="55.88" width="0.1524" layer="91"/>
 <pinref part="U3" gate="A" pin="B"/>
 <wire x1="119.38" y1="55.88" x2="124.46" y2="55.88" width="0.1524" layer="91"/>
+<pinref part="U2" gate="G$1" pin="B"/>
+<wire x1="76.2" y1="76.2" x2="76.2" y2="78.74" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$10" class="0">
 <segment>
-<pinref part="U2" gate="G$1" pin="A"/>
-<wire x1="68.58" y1="76.2" x2="68.58" y2="81.28" width="0.1524" layer="91"/>
 <wire x1="68.58" y1="81.28" x2="121.92" y2="81.28" width="0.1524" layer="91"/>
 <pinref part="U3" gate="A" pin="A"/>
 <wire x1="121.92" y1="81.28" x2="121.92" y2="58.42" width="0.1524" layer="91"/>
 <wire x1="121.92" y1="58.42" x2="124.46" y2="58.42" width="0.1524" layer="91"/>
+<pinref part="U2" gate="G$1" pin="A"/>
+<wire x1="68.58" y1="76.2" x2="68.58" y2="81.28" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="R_X" class="0">
@@ -15681,20 +15681,6 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <junction x="52.07" y="121.92"/>
 </segment>
 </net>
-<net name="N$15" class="0">
-<segment>
-<pinref part="U2" gate="G$1" pin="MISO"/>
-<pinref part="R10" gate="G$1" pin="2"/>
-<wire x1="53.34" y1="48.26" x2="45.72" y2="48.26" width="0.1524" layer="91"/>
-</segment>
-</net>
-<net name="N$16" class="0">
-<segment>
-<pinref part="U2" gate="G$1" pin="AN"/>
-<pinref part="AN" gate="G$1" pin="1"/>
-<wire x1="53.34" y1="68.58" x2="48.26" y2="68.58" width="0.1524" layer="91"/>
-</segment>
-</net>
 <net name="N$17" class="0">
 <segment>
 <pinref part="X8" gate="G$1" pin="KL1"/>
@@ -15737,6 +15723,20 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <pinref part="JP2" gate="-1" pin="2"/>
 <wire x1="368.3" y1="104.14" x2="355.6" y2="104.14" width="0.1524" layer="91"/>
 <wire x1="355.6" y1="104.14" x2="355.6" y2="114.3" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$16" class="0">
+<segment>
+<pinref part="U2" gate="G$1" pin="AN"/>
+<pinref part="AN" gate="G$1" pin="1"/>
+<wire x1="53.34" y1="68.58" x2="48.26" y2="68.58" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$15" class="0">
+<segment>
+<pinref part="U2" gate="G$1" pin="MISO"/>
+<pinref part="R10" gate="G$1" pin="2"/>
+<wire x1="53.34" y1="48.26" x2="45.72" y2="48.26" width="0.1524" layer="91"/>
 </segment>
 </net>
 </nets>
