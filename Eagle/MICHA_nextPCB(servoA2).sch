@@ -13558,6 +13558,90 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 </deviceset>
 </devicesets>
 </library>
+<library name="jumper" urn="urn:adsk.eagle:library:252">
+<description>&lt;b&gt;Jumpers&lt;/b&gt;&lt;p&gt;
+&lt;author&gt;Created by librarian@cadsoft.de&lt;/author&gt;</description>
+<packages>
+<package name="JP2Q" urn="urn:adsk.eagle:footprint:15392/1" library_version="1">
+<description>&lt;b&gt;JUMPER&lt;/b&gt;</description>
+<wire x1="-2.54" y1="-2.159" x2="-2.54" y2="2.159" width="0.1524" layer="21"/>
+<wire x1="-0.381" y1="2.54" x2="0" y2="2.159" width="0.1524" layer="21"/>
+<wire x1="0" y1="2.159" x2="0.381" y2="2.54" width="0.1524" layer="21"/>
+<wire x1="0.381" y1="2.54" x2="2.159" y2="2.54" width="0.1524" layer="21"/>
+<wire x1="2.54" y1="2.159" x2="2.159" y2="2.54" width="0.1524" layer="21"/>
+<wire x1="2.54" y1="2.159" x2="2.54" y2="-2.159" width="0.1524" layer="21"/>
+<wire x1="2.54" y1="-2.159" x2="2.159" y2="-2.54" width="0.1524" layer="21"/>
+<wire x1="2.159" y1="-2.54" x2="0.381" y2="-2.54" width="0.1524" layer="21"/>
+<wire x1="0" y1="-2.159" x2="0.381" y2="-2.54" width="0.1524" layer="21"/>
+<wire x1="0" y1="-2.159" x2="-0.381" y2="-2.54" width="0.1524" layer="21"/>
+<wire x1="-2.54" y1="2.159" x2="-2.159" y2="2.54" width="0.1524" layer="21"/>
+<wire x1="-2.159" y1="2.54" x2="-0.381" y2="2.54" width="0.1524" layer="21"/>
+<wire x1="-2.54" y1="-2.159" x2="-2.159" y2="-2.54" width="0.1524" layer="21"/>
+<wire x1="-2.159" y1="-2.54" x2="-0.381" y2="-2.54" width="0.1524" layer="21"/>
+<pad name="1" x="-1.27" y="-1.27" drill="0.9144" shape="octagon"/>
+<pad name="2" x="-1.27" y="1.27" drill="0.9144" shape="octagon"/>
+<pad name="3" x="1.27" y="-1.27" drill="0.9144" shape="octagon"/>
+<pad name="4" x="1.27" y="1.27" drill="0.9144" shape="octagon"/>
+<text x="-1.778" y="-4.191" size="1.27" layer="21" ratio="10">1</text>
+<text x="0.762" y="-4.191" size="1.27" layer="21" ratio="10">2</text>
+<text x="-2.54" y="3.048" size="1.27" layer="25" ratio="10">&gt;NAME</text>
+<text x="4.445" y="-2.54" size="1.27" layer="27" ratio="10" rot="R90">&gt;VALUE</text>
+<rectangle x1="-1.5748" y1="0.9652" x2="-0.9652" y2="1.5748" layer="51"/>
+<rectangle x1="0.9652" y1="0.9652" x2="1.5748" y2="1.5748" layer="51"/>
+<rectangle x1="0.9652" y1="-1.5748" x2="1.5748" y2="-0.9652" layer="51"/>
+<rectangle x1="-1.5748" y1="-1.5748" x2="-0.9652" y2="-0.9652" layer="51"/>
+</package>
+</packages>
+<packages3d>
+<package3d name="JP2Q" urn="urn:adsk.eagle:package:15450/1" type="box" library_version="1">
+<description>JUMPER</description>
+<packageinstances>
+<packageinstance name="JP2Q"/>
+</packageinstances>
+</package3d>
+</packages3d>
+<symbols>
+<symbol name="JP2E" urn="urn:adsk.eagle:symbol:15391/1" library_version="1">
+<wire x1="0" y1="0" x2="0" y2="1.27" width="0.1524" layer="94"/>
+<wire x1="0" y1="2.54" x2="0" y2="1.27" width="0.4064" layer="94"/>
+<wire x1="2.54" y1="0" x2="2.54" y2="1.27" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="2.54" x2="2.54" y2="1.27" width="0.4064" layer="94"/>
+<wire x1="-0.635" y1="0" x2="3.175" y2="0" width="0.4064" layer="94"/>
+<wire x1="3.175" y1="0" x2="3.175" y2="0.635" width="0.4064" layer="94"/>
+<wire x1="3.175" y1="0.635" x2="-0.635" y2="0.635" width="0.4064" layer="94"/>
+<wire x1="-0.635" y1="0.635" x2="-0.635" y2="0" width="0.4064" layer="94"/>
+<text x="-1.27" y="0" size="1.778" layer="95" rot="R90">&gt;NAME</text>
+<text x="5.715" y="0" size="1.778" layer="96" rot="R90">&gt;VALUE</text>
+<pin name="1" x="0" y="-2.54" visible="pad" length="short" direction="pas" rot="R90"/>
+<pin name="2" x="2.54" y="-2.54" visible="pad" length="short" direction="pas" rot="R90"/>
+</symbol>
+</symbols>
+<devicesets>
+<deviceset name="JP2QE" urn="urn:adsk.eagle:component:15477/1" prefix="JP" uservalue="yes" library_version="1">
+<description>&lt;b&gt;JUMPER&lt;/b&gt;</description>
+<gates>
+<gate name="-1" symbol="JP2E" x="2.54" y="0" addlevel="always"/>
+<gate name="-2" symbol="JP2E" x="12.7" y="0" addlevel="always"/>
+</gates>
+<devices>
+<device name="" package="JP2Q">
+<connects>
+<connect gate="-1" pin="1" pad="1"/>
+<connect gate="-1" pin="2" pad="2"/>
+<connect gate="-2" pin="1" pad="3"/>
+<connect gate="-2" pin="2" pad="4"/>
+</connects>
+<package3dinstances>
+<package3dinstance package3d_urn="urn:adsk.eagle:package:15450/1"/>
+</package3dinstances>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+</devicesets>
+</library>
 </libraries>
 <attributes>
 </attributes>
@@ -13696,6 +13780,8 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <part name="GND38" library="supply1" deviceset="GND" device=""/>
 <part name="DS4" library="SchottkyDiodes_SDM10M45SD" deviceset="SDM10M45SD" device=""/>
 <part name="VDD6" library="supply1" library_urn="urn:adsk.eagle:library:371" deviceset="VDD" device=""/>
+<part name="JP1" library="jumper" library_urn="urn:adsk.eagle:library:252" deviceset="JP2QE" device="" package3d_urn="urn:adsk.eagle:package:15450/1"/>
+<part name="JP2" library="jumper" library_urn="urn:adsk.eagle:library:252" deviceset="JP2QE" device="" package3d_urn="urn:adsk.eagle:package:15450/1"/>
 </parts>
 <sheets>
 <sheet>
@@ -14141,6 +14227,22 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 </instance>
 <instance part="VDD6" gate="G$1" x="238.76" y="129.54" smashed="yes">
 <attribute name="VALUE" x="237.236" y="129.794" size="1.778" layer="96" rot="R180"/>
+</instance>
+<instance part="JP1" gate="-1" x="365.76" y="116.84" smashed="yes" rot="R270">
+<attribute name="NAME" x="371.348" y="120.396" size="1.778" layer="95" rot="R180"/>
+<attribute name="VALUE" x="365.76" y="111.125" size="1.778" layer="96"/>
+</instance>
+<instance part="JP1" gate="-2" x="259.08" y="55.88" smashed="yes" rot="R90">
+<attribute name="NAME" x="259.08" y="54.61" size="1.778" layer="95" rot="R180"/>
+<attribute name="VALUE" x="259.08" y="61.595" size="1.778" layer="96" rot="R180"/>
+</instance>
+<instance part="JP2" gate="-1" x="358.14" y="116.84" smashed="yes" rot="R270">
+<attribute name="NAME" x="356.362" y="111.252" size="1.778" layer="95"/>
+<attribute name="VALUE" x="358.14" y="111.125" size="1.778" layer="96"/>
+</instance>
+<instance part="JP2" gate="-2" x="274.32" y="50.8" smashed="yes" rot="R90">
+<attribute name="NAME" x="274.32" y="49.53" size="1.778" layer="95" rot="R180"/>
+<attribute name="VALUE" x="274.32" y="56.515" size="1.778" layer="96" rot="R180"/>
 </instance>
 </instances>
 <busses>
@@ -14722,7 +14824,7 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 </segment>
 <segment>
 <wire x1="368.3" y1="99.06" x2="360.68" y2="99.06" width="0.1524" layer="91"/>
-<label x="346.71" y="98.298" size="1.778" layer="95"/>
+<label x="359.918" y="100.076" size="1.778" layer="95" rot="R180"/>
 <pinref part="X3" gate="G$1" pin="6"/>
 </segment>
 </net>
@@ -14730,7 +14832,7 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <segment>
 <pinref part="X3" gate="G$1" pin="8"/>
 <wire x1="368.3" y1="93.98" x2="360.68" y2="93.98" width="0.1524" layer="91"/>
-<label x="346.964" y="93.218" size="1.778" layer="95"/>
+<label x="359.664" y="94.742" size="1.778" layer="95" rot="R180"/>
 </segment>
 <segment>
 <label x="218.948" y="164.338" size="1.778" layer="95"/>
@@ -14849,9 +14951,14 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <wire x1="325.12" y1="185.42" x2="363.22" y2="185.42" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<wire x1="287.02" y1="58.42" x2="279.4" y2="58.42" width="0.1524" layer="91"/>
-<label x="262.636" y="57.658" size="1.778" layer="95"/>
-<pinref part="X5" gate="G$1" pin="6"/>
+<pinref part="JP1" gate="-2" pin="1"/>
+<wire x1="261.62" y1="55.88" x2="261.62" y2="45.72" width="0.1524" layer="91"/>
+<label x="260.858" y="44.704" size="1.778" layer="95" rot="R270"/>
+</segment>
+<segment>
+<pinref part="JP1" gate="-1" pin="1"/>
+<wire x1="363.22" y1="116.84" x2="363.22" y2="121.92" width="0.1524" layer="91"/>
+<label x="363.22" y="121.92" size="1.778" layer="95" rot="R90"/>
 </segment>
 </net>
 <net name="TANK1_RELAY" class="0">
@@ -15064,9 +15171,14 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <label x="307.848" y="123.698" size="1.778" layer="95"/>
 </segment>
 <segment>
-<wire x1="287.02" y1="53.34" x2="279.4" y2="53.34" width="0.1524" layer="91"/>
-<label x="267.208" y="52.578" size="1.778" layer="95"/>
-<pinref part="X5" gate="G$1" pin="8"/>
+<pinref part="JP2" gate="-2" pin="1"/>
+<wire x1="276.86" y1="50.8" x2="276.86" y2="45.72" width="0.1524" layer="91"/>
+<label x="275.844" y="45.212" size="1.778" layer="95" rot="R270"/>
+</segment>
+<segment>
+<pinref part="JP2" gate="-1" pin="1"/>
+<wire x1="355.6" y1="116.84" x2="355.6" y2="121.92" width="0.1524" layer="91"/>
+<label x="356.108" y="122.936" size="1.778" layer="95" rot="R90"/>
 </segment>
 </net>
 <net name="N$26" class="0">
@@ -15595,6 +15707,36 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <pinref part="X8" gate="G$1" pin="KL"/>
 <pinref part="R25" gate="G$1" pin="2"/>
 <wire x1="236.22" y1="25.4" x2="233.68" y2="25.4" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$19" class="0">
+<segment>
+<pinref part="X5" gate="G$1" pin="6"/>
+<pinref part="JP1" gate="-2" pin="2"/>
+<wire x1="287.02" y1="58.42" x2="261.62" y2="58.42" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$20" class="0">
+<segment>
+<pinref part="X3" gate="G$1" pin="2"/>
+<wire x1="368.3" y1="109.22" x2="363.22" y2="109.22" width="0.1524" layer="91"/>
+<pinref part="JP1" gate="-1" pin="2"/>
+<wire x1="363.22" y1="109.22" x2="363.22" y2="114.3" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$21" class="0">
+<segment>
+<pinref part="X5" gate="G$1" pin="8"/>
+<pinref part="JP2" gate="-2" pin="2"/>
+<wire x1="287.02" y1="53.34" x2="276.86" y2="53.34" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$22" class="0">
+<segment>
+<pinref part="X3" gate="G$1" pin="4"/>
+<pinref part="JP2" gate="-1" pin="2"/>
+<wire x1="368.3" y1="104.14" x2="355.6" y2="104.14" width="0.1524" layer="91"/>
+<wire x1="355.6" y1="104.14" x2="355.6" y2="114.3" width="0.1524" layer="91"/>
 </segment>
 </net>
 </nets>
