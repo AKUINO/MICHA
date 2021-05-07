@@ -174,29 +174,29 @@
 <circle x="3.5" y="52.5" radius="1.55" width="3.1" layer="42"/>
 <circle x="61.5" y="52.5" radius="1.55" width="3.1" layer="42"/>
 <wire x1="-0.1524" y1="53.15875" x2="-0.1524" y2="-23.9875" width="0" layer="20"/>
-<text x="13.335" y="-13.0175" size="1.27" layer="25">2
+<text x="13.0175" y="-10.16" size="1.27" layer="25">2
 1</text>
-<text x="66.675" y="-13.0175" size="1.27" layer="25">2
+<text x="66.3575" y="-10.16" size="1.27" layer="25">2
 1</text>
-<text x="88.9" y="-13.0175" size="1.27" layer="25">2
+<text x="86.995" y="-9.8425" size="1.27" layer="25">2
 1</text>
-<text x="96.52" y="0.3175" size="1.27" layer="25" rot="R90">2
+<text x="93.6625" y="2.2225" size="1.27" layer="25" rot="R90">2
 1</text>
-<text x="96.52" y="16.8275" size="1.27" layer="25" rot="R90">2
+<text x="93.6625" y="18.57375" size="1.27" layer="25" rot="R90">2
 1</text>
-<text x="96.52" y="35.2425" size="1.27" layer="25" rot="R90">2
+<text x="93.6625" y="37.30625" size="1.27" layer="25" rot="R90">2
 1</text>
-<text x="30.1625" y="-13.0175" size="1.27" layer="25">8
+<text x="30.48" y="-10.16" size="1.27" layer="25">8
 7</text>
-<text x="83.5025" y="-13.0175" size="1.27" layer="25">8
+<text x="83.82" y="-10.16" size="1.27" layer="25">8
 7</text>
-<text x="105.41" y="-13.335" size="1.27" layer="25">8
+<text x="104.4575" y="-10.16" size="1.27" layer="25">8
 7</text>
-<text x="96.52" y="14.9225" size="1.27" layer="25" rot="R90">8
+<text x="93.6625" y="17.30375" size="1.27" layer="25" rot="R90">8
 7</text>
-<text x="96.52" y="33.3375" size="1.27" layer="25" rot="R90">8
+<text x="93.6625" y="36.03625" size="1.27" layer="25" rot="R90">8
 7</text>
-<text x="96.2025" y="52.07" size="1.27" layer="25" rot="R90">8
+<text x="93.345" y="54.76875" size="1.27" layer="25" rot="R90">8
 7</text>
 <text x="11.826875" y="-22.5425" size="1.27" layer="25" rot="R270">1</text>
 <text x="33.655" y="40.005" size="3.048" layer="25">MICHA V2.0</text>
@@ -207,6 +207,10 @@
 <wire x1="61.515625" y1="-32.22625" x2="61.2775" y2="-32.385" width="0.1524" layer="28"/>
 <wire x1="-0.3175" y1="3.4925" x2="68.2625" y2="3.4925" width="0.1524" layer="37"/>
 <text x="34.29" y="37.7825" size="1.27" layer="25">github.com/AKUINO/MICHA</text>
+<text x="10.16" y="-20.32" size="0.762" layer="25" rot="R90">+12V</text>
+<text x="10.16" y="-13.335" size="0.762" layer="25" rot="R90">+5V</text>
+<text x="10.16" y="-16.8275" size="0.762" layer="25" rot="R90">GND</text>
+<text x="10.16" y="-23.8125" size="0.762" layer="25" rot="R90">GND</text>
 </plain>
 <libraries>
 <library name="FLYFISH">
