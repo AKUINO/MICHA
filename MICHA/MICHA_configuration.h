@@ -69,6 +69,7 @@ boolean debug_flag = false;   // debug mode enable flag (with debug_flag false, 
   #define PUMP_ERR_PIN          19         // pump error signal pin
   #define PUMP_POW_PIN          20         // pump power pin   DO NOT USE FOR NOW
   #define PUMP_SERVO_PIN        0          // pump servo signal pin
+#endif
 // common pins
 #define PUMP_DIR_PIN          1          // pump direction pin
 #define PUMP_SPEED_PIN        2          // pump speed pin
