@@ -11,6 +11,8 @@
 // WARNING: please verify the output states match with your hardware states (is it the same logic?)
 //
 // Version notes:
+//  - v2.0.0:
+//          - dissociation of the pin assignement of the V1 and V2 PCB
 //  - v1.1.5:
 //          - speed_step as a variable (instead of define)
 //          - modification of speed_step by PUMP_SPEED_INC_REG implemented
