@@ -13175,6 +13175,10 @@ www.irf.com&lt;p&gt;
 <circle x="-1.397" y="0.635" radius="0.283978125" width="0.1524" layer="21"/>
 <text x="-2.54" y="-2.54" size="1.016" layer="27">&gt;VALUE</text>
 <text x="-2.54" y="1.651" size="1.016" layer="25">&gt;NAME</text>
+<rectangle x1="-3.175" y1="0.381" x2="-1.905" y2="0.889" layer="21"/>
+<rectangle x1="-3.175" y1="-0.889" x2="-1.905" y2="-0.381" layer="21"/>
+<rectangle x1="1.905" y1="0.381" x2="3.175" y2="0.889" layer="21"/>
+<rectangle x1="1.905" y1="-0.889" x2="3.175" y2="-0.381" layer="21"/>
 </package>
 </packages>
 <symbols>
@@ -15417,14 +15421,7 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <segment>
 <pinref part="O1" gate="G$1" pin="C"/>
 <wire x1="66.04" y1="182.88" x2="50.8" y2="182.88" width="0.1524" layer="91"/>
-<label x="50.292" y="183.896" size="1.778" layer="95" rot="R180"/>
-</segment>
-</net>
-<net name="N$7" class="0">
-<segment>
-<pinref part="O1" gate="G$1" pin="A"/>
-<wire x1="66.04" y1="187.96" x2="63.5" y2="187.96" width="0.1524" layer="91"/>
-<pinref part="R18" gate="G$1" pin="2"/>
+<label x="50.038" y="183.896" size="1.778" layer="95" rot="R180"/>
 </segment>
 </net>
 <net name="N$2" class="0">
@@ -15460,14 +15457,14 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <pinref part="R6" gate="G$1" pin="1"/>
 <junction x="99.06" y="167.64"/>
 <wire x1="99.06" y1="167.64" x2="99.06" y2="165.1" width="0.1524" layer="91"/>
-<pinref part="O1" gate="G$1" pin="COL"/>
-<wire x1="83.82" y1="187.96" x2="91.44" y2="187.96" width="0.1524" layer="91"/>
 <wire x1="91.44" y1="187.96" x2="91.44" y2="167.64" width="0.1524" layer="91"/>
 <wire x1="91.44" y1="167.64" x2="99.06" y2="167.64" width="0.1524" layer="91"/>
 <pinref part="U1" gate="G$1" pin="A2"/>
 <wire x1="144.78" y1="195.58" x2="116.84" y2="195.58" width="0.1524" layer="91"/>
 <wire x1="116.84" y1="195.58" x2="116.84" y2="167.64" width="0.1524" layer="91"/>
 <wire x1="116.84" y1="167.64" x2="99.06" y2="167.64" width="0.1524" layer="91"/>
+<pinref part="O1" gate="G$1" pin="COL"/>
+<wire x1="83.82" y1="187.96" x2="91.44" y2="187.96" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="VDD" class="0">
@@ -15748,6 +15745,13 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <pinref part="U2" gate="G$1" pin="MISO"/>
 <pinref part="R10" gate="G$1" pin="2"/>
 <wire x1="53.34" y1="48.26" x2="45.72" y2="48.26" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$7" class="0">
+<segment>
+<pinref part="O1" gate="G$1" pin="A"/>
+<pinref part="R18" gate="G$1" pin="2"/>
+<wire x1="66.04" y1="187.96" x2="63.5" y2="187.96" width="0.1524" layer="91"/>
 </segment>
 </net>
 </nets>

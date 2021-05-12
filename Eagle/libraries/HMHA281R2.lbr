@@ -6,7 +6,7 @@
 <setting alwaysvectorfont="no"/>
 <setting verticaltext="up"/>
 </settings>
-<grid distance="50" unitdist="mil" unit="mil" style="lines" multiple="1" display="yes" altdistance="5" altunitdist="mil" altunit="mil"/>
+<grid distance="0.635" unitdist="mm" unit="mm" style="lines" multiple="1" display="yes" altdistance="5" altunitdist="mil" altunit="mil"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="yes" active="yes"/>
 <layer number="2" name="Route2" color="16" fill="1" visible="no" active="yes"/>
@@ -87,6 +87,10 @@
 <circle x="-1.397" y="0.635" radius="0.283978125" width="0.1524" layer="21"/>
 <text x="-2.54" y="-2.54" size="1.016" layer="27">&gt;VALUE</text>
 <text x="-2.54" y="1.651" size="1.016" layer="25">&gt;NAME</text>
+<rectangle x1="-3.175" y1="0.381" x2="-1.905" y2="0.889" layer="21"/>
+<rectangle x1="-3.175" y1="-0.889" x2="-1.905" y2="-0.381" layer="21"/>
+<rectangle x1="1.905" y1="0.381" x2="3.175" y2="0.889" layer="21"/>
+<rectangle x1="1.905" y1="-0.889" x2="3.175" y2="-0.381" layer="21"/>
 </package>
 </packages>
 <symbols>

@@ -3048,6 +3048,10 @@ www.irf.com&lt;p&gt;
 <circle x="-1.397" y="0.635" radius="0.283978125" width="0.1524" layer="21"/>
 <text x="-2.54" y="-2.54" size="1.016" layer="27">&gt;VALUE</text>
 <text x="-2.54" y="1.651" size="1.016" layer="25">&gt;NAME</text>
+<rectangle x1="-3.175" y1="0.381" x2="-1.905" y2="0.889" layer="21"/>
+<rectangle x1="-3.175" y1="-0.889" x2="-1.905" y2="-0.381" layer="21"/>
+<rectangle x1="1.905" y1="0.381" x2="3.175" y2="0.889" layer="21"/>
+<rectangle x1="1.905" y1="-0.889" x2="3.175" y2="-0.381" layer="21"/>
 </package>
 </packages>
 </library>
@@ -4625,17 +4629,10 @@ Your Eurocircuits Team
 </signal>
 <signal name="PUMP_SERVO_A-">
 <contactref element="X4" pad="3"/>
-<contactref element="O1" pad="P$2"/>
-<wire x1="106.9975" y1="-12.7575" x2="105.51005" y2="-11.27005" width="0.1524" layer="1"/>
-<wire x1="105.51005" y1="-11.27005" x2="95.72505" y2="-11.27005" width="0.1524" layer="1"/>
+<wire x1="95.72505" y1="-11.27005" x2="105.51005" y2="-11.27005" width="0.1524" layer="1"/>
 <wire x1="94.2975" y1="-9.8425" x2="95.72505" y2="-11.27005" width="0.1524" layer="1"/>
-</signal>
-<signal name="N$7">
-<contactref element="O1" pad="P$1"/>
-<contactref element="R18" pad="2"/>
-<wire x1="108.2675" y1="-12.7575" x2="108.2675" y2="-9.525" width="0.1524" layer="1"/>
-<wire x1="108.2675" y1="-9.525" x2="107.7845" y2="-9.042" width="0.1524" layer="1"/>
-<wire x1="107.6325" y1="-9.042" x2="107.7845" y2="-9.042" width="0.1524" layer="1"/>
+<contactref element="O1" pad="P$2"/>
+<wire x1="105.51005" y1="-11.27005" x2="106.9975" y2="-12.7575" width="0.1524" layer="1"/>
 </signal>
 <signal name="N$2">
 <contactref element="TBD2" pad="13"/>
@@ -4666,9 +4663,7 @@ Your Eurocircuits Team
 <signal name="N$9">
 <contactref element="R6" pad="1"/>
 <contactref element="C13" pad="1"/>
-<contactref element="O1" pad="P$4"/>
 <wire x1="63.3345" y1="-4.1275" x2="65.00475" y2="-2.45725" width="0.1524" layer="1"/>
-<wire x1="108.2675" y1="-18.3575" x2="108.2675" y2="-16.51" width="0.1524" layer="1"/>
 <wire x1="106.045" y1="-14.2875" x2="106.045" y2="-12.7" width="0.1524" layer="1"/>
 <wire x1="106.045" y1="-12.7" x2="104.91745" y2="-11.57245" width="0.1524" layer="1"/>
 <via x="75.8825" y="-3.81" extent="1-16" drill="0.35"/>
@@ -4682,7 +4677,7 @@ Your Eurocircuits Team
 <via x="73.9775" y="-2.54" extent="1-16" drill="0.35"/>
 <wire x1="73.9775" y1="-2.54" x2="73.89475" y2="-2.45725" width="0.1524" layer="1"/>
 <wire x1="73.89475" y1="-2.45725" x2="65.00475" y2="-2.45725" width="0.1524" layer="1"/>
-<wire x1="108.2675" y1="-16.51" x2="106.045" y2="-14.2875" width="0.1524" layer="1"/>
+<wire x1="106.045" y1="-14.2875" x2="108.2675" y2="-16.51" width="0.1524" layer="1"/>
 <contactref element="U1" pad="J4_4"/>
 <wire x1="55.245" y1="2.8148" x2="57.15" y2="0.9098" width="0.1524" layer="1"/>
 <wire x1="58.29" y1="-1.27" x2="60.5125" y2="-1.27" width="0.1524" layer="1"/>
@@ -4690,6 +4685,8 @@ Your Eurocircuits Team
 <wire x1="57.15" y1="0.9098" x2="57.15" y2="-0.13" width="0.1524" layer="1"/>
 <wire x1="60.5125" y1="-1.27" x2="63.3345" y2="-4.092" width="0.1524" layer="1"/>
 <wire x1="63.3345" y1="-4.092" x2="63.3345" y2="-4.1275" width="0.1524" layer="1"/>
+<contactref element="O1" pad="P$4"/>
+<wire x1="108.2675" y1="-16.51" x2="108.2675" y2="-18.3575" width="0.1524" layer="1"/>
 </signal>
 <signal name="VDD">
 <contactref element="R6" pad="2"/>
@@ -5022,6 +5019,12 @@ Your Eurocircuits Team
 <contactref element="R10" pad="2"/>
 <wire x1="22.38375" y1="36.3605" x2="23.48825" y2="37.465" width="0.1524" layer="1"/>
 <wire x1="23.48825" y1="37.465" x2="25.7175" y2="37.465" width="0.1524" layer="1"/>
+</signal>
+<signal name="N$7">
+<contactref element="O1" pad="P$1"/>
+<contactref element="R18" pad="2"/>
+<wire x1="107.6325" y1="-9.042" x2="108.2675" y2="-9.677" width="0.1524" layer="1"/>
+<wire x1="108.2675" y1="-9.677" x2="108.2675" y2="-12.7575" width="0.1524" layer="1"/>
 </signal>
 </signals>
 <mfgpreviewcolors>
