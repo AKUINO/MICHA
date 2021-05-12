@@ -216,10 +216,9 @@ void setup()
   pinMode(THERMI3_PIN,INPUT);
   pinMode(THERMI4_PIN,INPUT);
   pinMode(PUMP_ERR_PIN,INPUT);
-  pinMode(PUMP_SERVO_PIN,INPUT);
-//#ifdef INTERRUPT
+  pinMode(PUMP_SERVO_PIN,INPUT_PULLUP);
+
   attachInterrupt(digitalPinToInterrupt(PUMP_SERVO_PIN),int_ISR,FALLING);
-//#endif
   
   // Output pin configuration
   pinMode(PUMP_SPEED_PIN,OUTPUT);

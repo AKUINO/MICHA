@@ -54,12 +54,12 @@ boolean debug_flag = false;   // debug mode enable flag (with debug_flag false, 
 #if VERSION == 2
   #define THERMIS_POW_PIN       A0         // thermistor power pin
   #define PUMP_ERR_PIN          A1         // pump error signal pin
-  #define PUMP_SERVO_PIN        A2         // pump servo signal pin
+  #define PUMP_SERVO_PIN        17         // pump servo signal pin (A2)
   #define THERMI1_PIN           A3         // thermistor 1 pin
   #define THERMI2_PIN           A4         // thermistor 2 pin
   #define THERMI3_PIN           A5         // thermistor 3 pin
   #define THERMI4_PIN           A6         // thermistor 4 pin
-  #define PUMP_POW_PIN          0          // pump power pin   DO NOT USE FOR NOW
+  #define PUMP_POW_PIN          0          // pump power pin
 #elif VERSION == 1
   #define THERMI1_PIN           A0         // thermistor 1 pin
   #define THERMI2_PIN           A1         // thermistor 2 pin
