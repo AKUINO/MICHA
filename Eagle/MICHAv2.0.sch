@@ -13265,6 +13265,14 @@ www.irf.com&lt;p&gt;
 <smd name="6" x="2.475" y="-0.635" dx="1.97" dy="0.59" layer="1" roundness="25"/>
 <smd name="7" x="2.475" y="0.635" dx="1.97" dy="0.59" layer="1" roundness="25"/>
 <smd name="8" x="2.475" y="1.905" dx="1.97" dy="0.59" layer="1" roundness="25"/>
+<rectangle x1="-3.175" y1="0.435" x2="-1.905" y2="0.835" layer="21"/>
+<rectangle x1="-3.175" y1="1.705" x2="-1.905" y2="2.105" layer="21"/>
+<rectangle x1="1.905" y1="1.705" x2="3.175" y2="2.105" layer="21"/>
+<rectangle x1="1.905" y1="0.435" x2="3.175" y2="0.835" layer="21"/>
+<rectangle x1="1.905" y1="-0.835" x2="3.175" y2="-0.435" layer="21"/>
+<rectangle x1="1.905" y1="-2.105" x2="3.175" y2="-1.705" layer="21"/>
+<rectangle x1="-3.175" y1="-2.105" x2="-1.905" y2="-1.705" layer="21"/>
+<rectangle x1="-3.175" y1="-0.835" x2="-1.905" y2="-0.435" layer="21"/>
 </package>
 </packages>
 <symbols>
@@ -14668,6 +14676,9 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <pinref part="P+7" gate="1" pin="+5V"/>
 <wire x1="281.94" y1="215.9" x2="281.94" y2="220.98" width="0.1524" layer="91"/>
 <pinref part="K1" gate="G$1" pin="2"/>
+<pinref part="K1" gate="G$1" pin="4"/>
+<wire x1="281.94" y1="213.36" x2="281.94" y2="215.9" width="0.1524" layer="91"/>
+<junction x="281.94" y="215.9"/>
 </segment>
 <segment>
 <pinref part="P+6" gate="1" pin="+5V"/>
@@ -14677,10 +14688,10 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 </segment>
 <segment>
 <pinref part="P+4" gate="1" pin="+5V"/>
-<pinref part="U3" gate="A" pin="V+"/>
-<wire x1="160.02" y1="63.5" x2="175.26" y2="63.5" width="0.1524" layer="91"/>
 <wire x1="175.26" y1="63.5" x2="175.26" y2="68.58" width="0.1524" layer="91"/>
 <pinref part="C15" gate="G$1" pin="1"/>
+<pinref part="U3" gate="A" pin="V+"/>
+<wire x1="160.02" y1="63.5" x2="175.26" y2="63.5" width="0.1524" layer="91"/>
 <junction x="175.26" y="63.5"/>
 </segment>
 <segment>
@@ -15531,35 +15542,30 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <segment>
 <pinref part="U3" gate="A" pin="IN"/>
 <wire x1="124.46" y1="53.34" x2="116.84" y2="53.34" width="0.1524" layer="91"/>
-<label x="116.332" y="54.102" size="1.778" layer="95" rot="R180"/>
+<label x="116.332" y="54.356" size="1.778" layer="95" rot="R180"/>
 </segment>
 </net>
 <net name="N$1" class="0">
 <segment>
 <wire x1="76.2" y1="78.74" x2="119.38" y2="78.74" width="0.1524" layer="91"/>
 <wire x1="119.38" y1="78.74" x2="119.38" y2="55.88" width="0.1524" layer="91"/>
-<pinref part="U3" gate="A" pin="B"/>
-<wire x1="119.38" y1="55.88" x2="124.46" y2="55.88" width="0.1524" layer="91"/>
 <pinref part="U2" gate="G$1" pin="B"/>
 <wire x1="76.2" y1="76.2" x2="76.2" y2="78.74" width="0.1524" layer="91"/>
+<pinref part="U3" gate="A" pin="B"/>
+<wire x1="124.46" y1="55.88" x2="119.38" y2="55.88" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$10" class="0">
 <segment>
 <wire x1="68.58" y1="81.28" x2="121.92" y2="81.28" width="0.1524" layer="91"/>
-<pinref part="U3" gate="A" pin="A"/>
 <wire x1="121.92" y1="81.28" x2="121.92" y2="58.42" width="0.1524" layer="91"/>
-<wire x1="121.92" y1="58.42" x2="124.46" y2="58.42" width="0.1524" layer="91"/>
 <pinref part="U2" gate="G$1" pin="A"/>
 <wire x1="68.58" y1="76.2" x2="68.58" y2="81.28" width="0.1524" layer="91"/>
+<pinref part="U3" gate="A" pin="A"/>
+<wire x1="124.46" y1="58.42" x2="121.92" y2="58.42" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="R_X" class="0">
-<segment>
-<pinref part="U3" gate="A" pin="X"/>
-<wire x1="160.02" y1="58.42" x2="162.56" y2="58.42" width="0.1524" layer="91"/>
-<label x="163.322" y="57.912" size="1.778" layer="95"/>
-</segment>
 <segment>
 <wire x1="215.9" y1="30.48" x2="208.28" y2="30.48" width="0.1524" layer="91"/>
 <wire x1="215.9" y1="22.86" x2="215.9" y2="30.48" width="0.1524" layer="91"/>
@@ -15569,13 +15575,13 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <junction x="215.9" y="30.48"/>
 <pinref part="TVS1" gate="G$1" pin="C"/>
 </segment>
+<segment>
+<pinref part="U3" gate="A" pin="X"/>
+<wire x1="160.02" y1="58.42" x2="162.56" y2="58.42" width="0.1524" layer="91"/>
+<label x="163.322" y="57.658" size="1.778" layer="95"/>
+</segment>
 </net>
 <net name="R_Y" class="0">
-<segment>
-<pinref part="U3" gate="A" pin="Y"/>
-<wire x1="160.02" y1="55.88" x2="162.56" y2="55.88" width="0.1524" layer="91"/>
-<label x="163.322" y="55.372" size="1.778" layer="95"/>
-</segment>
 <segment>
 <wire x1="220.98" y1="25.4" x2="208.28" y2="25.4" width="0.1524" layer="91"/>
 <wire x1="220.98" y1="22.86" x2="220.98" y2="25.4" width="0.1524" layer="91"/>
@@ -15584,6 +15590,11 @@ Source: http://focus.ti.com/lit/ds/symlink/sn74lvc1g3157.</description>
 <wire x1="223.52" y1="25.4" x2="220.98" y2="25.4" width="0.1524" layer="91"/>
 <junction x="220.98" y="25.4"/>
 <pinref part="TVS2" gate="G$1" pin="C"/>
+</segment>
+<segment>
+<pinref part="U3" gate="A" pin="Y"/>
+<wire x1="160.02" y1="55.88" x2="162.56" y2="55.88" width="0.1524" layer="91"/>
+<label x="163.322" y="55.118" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="N$11" class="0">
