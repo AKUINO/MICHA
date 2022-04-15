@@ -16,7 +16,7 @@
 //          - Raspberry motherboard is replaced by Odroid C4 (deletion, addition and new assignement of some pins)
 //          - deletion of the pins and the registers related to: pump error, pump servo, tank2, valve 1, valve 2, cold solenoid
 //          - deletion of all the code line related to the previous pins and registers
-//          - following pins are added: PRESS_SENSOR_PIN, LEVEL_SENSOR1_PIN, LEVEL_SENSOR2_PIN, EMERGENCY_STOP_PIN
+//          - following pins arLEVEL_SENSOR1_REG added: PRESS_SENSOR_PIN, LEVEL_SENSOR1_PIN, LEVEL_SENSOR2_PIN, EMERGENCY_STOP_PIN
 //          - following variables are added:
 //              - level1_flag: to enable/disable the use of the level sensor 1
 //              - level2_flag: to enable/disable the use of the level sensor 2
@@ -280,9 +280,12 @@ void loop() {
   {
     debug_flag = ModbusRTUServer.coilRead(DEBUG_FLAG_REG);
     speed_step = ModbusRTUServer.holdingRegisterRead(PUMP_SPEED_INC_REG);
+    level1_flag = ModbusRTUServer.coilRead(LEVEL1_FLAG_REG);
+    level2_flag = ModbusRTUServer.coilRead(LEVEL2_FLAG_REG);
 
     ModbusRTUServer.poll(); // scans if a command is coming from the master
 
+    manage_emergency_stop();
     manage_id();
     manage_pump();
     manage_tanks();
@@ -297,12 +300,17 @@ void loop() {
   delay(1);
 }
 
+// Reads the emergency stop level
+void manage_emergency_stop()
+{
+  uint8_t emergency_level = digitalRead(EMERGENCY_STOP_PIN);
+
+  ModbusRTUServer.discreteInputWrite(EMERGENCY_STOP_REG,emergency_level);
+}
+
 // Reads and stores the level sensor values into the register
 void manage_levels()
 {
-  level1_flag = ModbusRTUServer.coilRead(LEVEL1_FLAG_REG);
-  level2_flag = ModbusRTUServer.coilRead(LEVEL2_FLAG_REG);
-  
   if(level1_flag)  //if the monitoring of the input level is enable
   {
     uint8_t level_sensor1 = digitalRead(LEVEL_SENSOR1_PIN);

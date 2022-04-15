@@ -1,7 +1,9 @@
 // MICHA PROJECT
-// Register and I/O configuration
+// Registers and I/O configuration
 // For Arduino MKR Zero
 
+
+// All the MICHA ouputs correspond with the related register values (so Arduino outputs don't specially match with the register value)
 
 // settings
 #define VERSION 4             // version of the current PCB
