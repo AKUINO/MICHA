@@ -175,7 +175,6 @@ void setup()
   pinMode(PUMP_POW_PIN,OUTPUT);
   pinMode(TANK1_PIN,OUTPUT);
   pinMode(SOL_HOT_PIN,OUTPUT);
-
   pinMode(THERMIS_POW_PIN,OUTPUT);
 
   // Default assignment of outputs
