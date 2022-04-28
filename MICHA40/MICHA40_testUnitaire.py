@@ -8,6 +8,7 @@
 import traceback
 from serial import Serial, PARITY_NONE
 from umodbus.client.serial import rtu
+import Odroid.GPIO as GPIO
 import time
 
 SLAVE_ID = 1
@@ -15,6 +16,25 @@ SLAVE_ID = 1
 VOLTAGE_REF = 2.497 # value of the excitement voltage reference
 THERMI_WIRE = 0.6 # value of the twin wire resistor
 
+# Odroid configuration
+GPIO.setmode(GPIO.BOARD)
+# pin used
+START_BTN_PIN               = 15    # pin on which the start button is connected
+PAUSE_BTN_PIN               = 13    # pin on which the pause button is connected
+STOP_BTN_PIN                = 33    # pin on which the start button is connected
+START_LED_PIN               = 16    # pin on which the start led is connected
+PAUSE_LED_PIN               = 18    # pin on which the pause led is connected
+STATE_LED_PIN               = 8     # pin on which the state led is connected
+BUZZER_PIN                  = 35    # pin on which the buzzer is connected
+# pin configuration
+GPIO.setup(START_BTN_PIN, GPIO.IN)
+GPIO.setup(PAUSE_BTN_PIN, GPIO.IN)
+GPIO.setup(STOP_BTN_PIN, GPIO.IN)
+GPIO.pinMode(STOP_BTN_PIN, GPIO.PUD_UP)
+GPIO.setup(START_LED_PIN, GPIO.OUT)
+GPIO.setup(PAUSE_LED_PIN, GPIO.OUT)
+GPIO.setup(STATE_LED_PIN, GPIO.OUT)
+GPIO.setup(BUZZER_PIN, GPIO.OUT)
 
 # Registre configuration
 # coils
@@ -28,12 +48,10 @@ TANK1_REG                   = 0x20  # register which stores the tank 1 state
 SOL_HOT_REG                 = 0x30  # register which stores the hot water solenoid state
 BOOT_FLAG_REG               = 0x40  # register which stores the boot state
 DEBUG_FLAG_REG              = 0x41  # register which stores the state of the debug mode
-
 # discrete registers
 LEVEL_SENSOR1_REG           = 0x01  # register which stores the state of the input level sensor (1 for water)
 LEVEL_SENSOR2_REG           = 0x02  # register which stores the state of the output level sensor (1 for water)
 EMERGENCY_STOP_REG          = 0x10  # register which stores the state of  the emergency stop button (0 for active emergency stop)
-
 # input registers
 GEN_STATE_REG               = 0x00  # register which stores the general state of the system
 THERMI1_REG                 = 0x01  # register which stores the thermistor 1 value (0 - 4095)
@@ -42,7 +60,6 @@ THERMI3_REG                 = 0x03  # register which stores the thermistor 3 val
 THERMI4_REG                 = 0x04  # register which stores the thermistor 4 value (0 - 4095)
 PRESS_SENSOR_REG            = 0x10  # register which stores the pressure sensor value (0 (low pressure) - 4095 (high pressure))
 ERROR_CODE_REG              = 0x20  # register which stores the general error codes
-
 # holding registers
 ID_REG                      = 0x00  # register which stores the modbus ID
 PUMP_SPEED_REG              = 0x10  # register which stores the pump speed
@@ -351,6 +368,42 @@ class Micha:
             response = self.write_pin(DEBUG_FLAG_REG, flag)
             return response
         return 0
+        
+    def get_startBtn(self): # to get the state of the start button
+        return GPIO.digitalRead(START_BTN_PIN)
+    
+    def get_pauseBtn(self): # to get the state of the pause button
+        return GPIO.digitalRead(PAUSE_BTN_PIN)
+    
+    def get_stopBtn(self): # to get the state of the start button
+        return GPIO.digitalRead(STOP_BTN_PIN)
+        
+    def get_startLed(self):
+        return GPIO.digitalRead(START_LED_PIN)
+        
+    def set_startLed(self, state=0):
+        GPIO.output(START_LED_PIN, state)
+        return 0
+    
+    def get_pauseLed(self):
+        return GPIO.digitalRead(PAUSE_LED_PIN)
+        
+    def set_pauseLed(self, state=0):
+        GPIO.output(PAUSE_LED_PIN, state)
+        return 0
+        
+    def get_stateLed(self):
+        return GPIO.digitalRead(STATE_LED_PIN)
+        
+    def set_stateLed(self, state=0):
+        GPIO.output(STATE_LED_PIN, state)
+        return 0
+    def get_buzzer(self):
+        return GPIO.digitalRead(BUZZER_PIN)
+        
+    def set_buzzer(self, state=0):
+        GPIO.output(BUZZER_PIN, state)
+        return 0
     
 # test section
 if __name__ == "__main__":
@@ -532,6 +585,7 @@ if __name__ == "__main__":
         
     def pressSensor(choice):
         """Get or set a value related to the pressure sensor."""
+        
         Vcc = 5 # power voltage applied to the pressure sensor
         pressure = pasto.get_press_sensor() # raw value of the pressure (0-4095)
         pressure_V = pressure/1638 # pressure in V
@@ -610,6 +664,56 @@ if __name__ == "__main__":
         # Pressure sensor
         print("Pressure sensor flag \t= {}".format(pasto.get_press_flag()))
         print("Pressure sensor \t= {}".format(pasto.get_press_sensor()))
+        
+    def electricalPanel(choice):
+        """Get or set a value related to the control panel (leds end buttons)."""
+        
+        if choice=='eps': # gets all the state of the control panel
+            print("\nStart button pin state = {}".format(pasto.get_startBtn()))
+            print("Pause button pin state = {}".format(pasto.get_pauseBtn()))
+            print("Stop button pin state = {}".format(pasto.get_stopBtn()))
+            print("Start led pin state = {}".format(pasto.get_startLed()))
+            print("Pause led pin state = {}".format(pasto.get_pauseLed()))
+            print("State led pin state = {}\n".format(pasto.get_stateLed()))
+        elif choice=='epgbs': # gets the green button state (start button)
+            print("\nStart button pin state = {}\n".format(pasto.get_startBtn()))
+        elif choice=='epgls': # gets the green led state (start led)
+            print("\nStart led pin state = {}\n".format(pasto.get_startLed()))
+        elif choice=='epgl1': # sets the green led state to 1 (start led)
+            pasto.set_startLed(1)
+            print("\nStart led pin state sets to 1\n")
+        elif choice=='epgl0': # sets the green led state to 0 (start led)
+            pasto.set_startLed(0)
+            print("\nStart led pin state sets to 0\n")
+        elif choice=='epobs': # gets the orange button state (pause button)
+            print("\nPause button pin state = {}\n".format(pasto.get_pauseBtn()))
+        elif choice=='epols': # gets the orange led state (pause led)
+            print("\nPause led pin state = {}\n".format(pasto.get_pauseLed()))
+        elif choice=='epol1': # sets the orange led state to 1 (pause led)
+            pasto.set_pauseLed(1)
+            print("\nPause led pin state sets to 1\n")
+        elif choice=='epol0': # sets the orange led state to 0 (pause led)
+            pasto.set_pauseLed(0)
+            print("\nPause led pin state sets to 0\n")
+        elif choice=='eprbs': # gets the red button state (stop button)
+            print("\nStop button pin state = {}\n".format(pasto.get_stopBtn()))
+        elif choice=='eprls': # gets the red led state (state led)
+            print("\nState led pin state = {}\n".format(pasto.get_stateLed()))
+        
+        return 0
+        
+    def buzzer(choice):
+        """Get the set a value related to the buzzer"""
+        
+        if choice=='bs': # gets the state of the buzzer pin
+            print("\nBuzzer pin state = {}\n".format(pasto.get_buzzer()))
+        elif choice=='b0':
+            pasto.set_buzzer(0)
+            print("\nBuzzer pin state sets to 0\n")
+        elif choice=='b1':
+            pasto.set_buzzer(1)
+            print("\nBuzzer pin state sets to 1\n")
+        return 0
 
     ################ main program ################
 
@@ -622,6 +726,9 @@ if __name__ == "__main__":
         print(" GENERAL\n",
               "-------\n",
               "all \t- Show all register values\n",
+              "bs \t- Show the buzzer pin state",
+              "b0 \t- Set the buzzer pin state to 0",
+              "b1 \t- Set the buzzer pin state to 1",
               "bss \t- Show boot state\n",
               "dms \t- Show debug mode state\n",
               "dm0 \t- Set debug mode to 0 (OFF)\n",
@@ -630,6 +737,19 @@ if __name__ == "__main__":
               "ecs \t- Show error code\n",
               "id \t- Show the modbus ID\n",
               "exit \t- Exit\n",
+              "\n ELECTRICAL PANEL",
+              "\n ---------------\n",
+              "eps \t- Show all the electrical panel states\n",
+              "epgbs \t- Show the start button pin state (green button)\n",
+              "epgls \t- Show the start led pin state (green button)\n",
+              "epgl0 \t- Set the start led pin state to 0 (green button)\n",
+              "epgl1 \t- Set the start led pin state to 1 (green button)\n",
+              "epobs \t- Show the pause button pin state (orange button)\n",
+              "epols \t- Show the pause led pin state (orange button)\n",
+              "epol0 \t- Set the pasue led pin state to 0 (orange button)\n",
+              "epol1 \t- Set the pause led pin state to 1 (orange button)\n",
+              "eprbs \t- Show the stop button pin state (red button)\n",
+              "eprls \t- Show the state led pin state (red button)\n",
               "\n HEATING CISTERN",
               "\n ---------------\n",
               "cps \t- Show the current heating cistern power pin state\n",
@@ -647,6 +767,22 @@ if __name__ == "__main__":
               "lf2s \t- Show the current level sensor 2 flag state\n",
               "lf20 \t- Set the level sensor 2 flag state to 0\n",
               "lf21 \t- Set the level sensor 2 flag state to 1\n",
+              "\n PRESSURE SENSOR",
+              "\n ---------------\n",
+              "prs \t- Show the current pressure sensor value\n",
+              "prfs \t- Show the current pressure sensor flag state\n",
+              "prf0 \t- Set the pressure sensor flag state to 0\n",
+              "prf1 \t- Set the pressure sensor flag state to 1\n",
+              "\n THERMISTORS",
+              "\n -------------\n",
+              "tps \t- Show the current thermistor power pin state\n",
+              "tp0 \t- Set the thermistor power pin state to 0\n",
+              "tp1 \t- Set the thermistor power pin state to 1\n",
+              "ts \t- Show all thermistor values\n",
+              "ts1 \t- Show thermistor 1 value\n",
+              "ts2 \t- Show thermistor 2 value\n",
+              "ts3 \t- Show thermistor 3 value\n",
+              "ts4 \t- Show thermistor 4 value\n",
               "\n PUMP",
               "\n ----\n",
               "ps \t- Show all the pump registers\n",
@@ -660,27 +796,11 @@ if __name__ == "__main__":
               "psX \t- Set the pump speed to X (0 <= X <= 65000)\n",
               "psis \t- Show the current pump speed incrementation\n",
               "psiX \t- Set the pump speed incrementation to X (0 <= X <= 65000)\n",
-              "\n PRESSURE SENSOR",
-              "\n ---------------\n",
-              "prs \t- Show the current pressure sensor value\n",
-              "prfs \t- Show the current pressure sensor flag state\n",
-              "prf0 \t- Set the pressure sensor flag state to 0\n",
-              "prf1 \t- Set the pressure sensor flag state to 1\n",
               "\n WATER SOLENOID",
               "\n --------------\n",
               "ss \t- Show the current water solenoid pin state\n",
               "s0 \t- Set the water solenoid pin state to 0\n",
-              "s1 \t- Set the water solenoid pin state to 1\n",
-              "\n THERMISTORS",
-              "\n -------------\n",
-              "tps \t- Show the current thermistor power pin state\n",
-              "tp0 \t- Set the thermistor power pin state to 0\n",
-              "tp1 \t- Set the thermistor power pin state to 1\n",
-              "ts \t- Show all thermistor values\n",
-              "ts1 \t- Show thermistor 1 value\n",
-              "ts2 \t- Show thermistor 2 value\n",
-              "ts3 \t- Show thermistor 3 value\n",
-              "ts4 \t- Show thermistor 4 value\n")
+              "s1 \t- Set the water solenoid pin state to 1\n")
         
         choice = input('Entrez votre commande : ')
         
@@ -890,6 +1010,70 @@ if __name__ == "__main__":
                     time.sleep(1)
             except:
                 pass
+        elif choice=='eps':
+            try:
+                while True:
+                    electricalPanel('eps')
+                    time.sleep(1)
+            except:
+                pass
+        elif choice=='epgbs':
+            try:
+                while True:
+                    electricalPanel('epgbs')
+                    time.sleep(1)
+            except:
+                pass
+        elif choice=='epgls':
+            electricalPanel('epgls')
+            input()
+        elif choice=='epgl1':
+            electricalPanel('epgl1')
+            input()
+        elif choice=='epgl0':
+            electricalPanel('epgl0')
+            input()
+        elif choice=='epobs':
+            try:
+                while True:
+                    electricalPanel('epobs')
+                    time.sleep(1)
+            except:
+                pass
+        elif choice=='epols':
+            electricalPanel('epols')
+            input()
+        elif choice=='epol1':
+            electricalPanel('epol1')
+            input()
+        elif choice=='epol0':
+            electricalPanel('epol0')
+            input()
+        elif choice=='eprbs':
+            try:
+                while True:
+                    electricalPanel('eprbs')
+                    time.sleep(1)
+            except:
+                pass
+        elif choice=='eprls':
+            electricalPanel('eprls')
+            input()
+        elif choice=='eprl1':
+           electricalPanel('eprl1')
+           input()
+        elif choice=='eprl0':
+            electricalPanel('eprl0')
+            input()
+        elif choice=='bs':
+            buzzer('bs')
+            input()
+        elif choice=='b0':
+            buzzer('b0')
+            input()
+        elif choice=='b1':
+            buzzer('b1')
+            input()
         elif choice!='exit' and choice!='':
             print('\nWrong command!\n')
             input()
