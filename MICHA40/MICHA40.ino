@@ -293,6 +293,10 @@ void loop() {
     {
       manage_levels();
     }
+    if(press_flag)
+    {
+      manage_pressure();
+    }
 
     time_ref2 = tps;
   }
@@ -379,6 +383,17 @@ void manage_tanks()
   }
 }
 
+uint32_t pressure = 0;             // to store the raw pressure values in the goal to compute an average
+uint16_t nb_pressures = 0;
+
+// Updates the pressure with current value
+void manage_pressure()
+{      
+    pressure += analogRead(PRESS_SENSOR_PIN);
+    nb_pressures++ ;
+}
+  
+
 // Reads and stores the thermistor values into the registers (the storage value is an average of 3 successive values)
 void get_thermis()
 {
@@ -432,20 +447,14 @@ void get_pressure()
   
   if(press_flag)  //if the monitoring of the pressure sensor is enable
   {
-    uint16_t pressure = 0;             // to store the raw pressure values in the goal to compute an average
-    
-    for(int8_t i=0;i<3;i++) // reading 3 values
+    if (nb_pressures > 0)
     {
-      delay(10);
-      
-      pressure = pressure + analogRead(PRESS_SENSOR_PIN);
+        uint16_t pressure16 = pressure / nb_pressures;  // average of cumulated values
+        // Storing the average in the register
+        ModbusRTUServer.inputRegisterWrite(PRESS_SENSOR_REG,pressure16);
+        pressure = 0;
+        nb_pressures = 0;
     }
-  
-    pressure = pressure/3;  // average of the 3 values
-  
-    // Storing the average in the register
-    ModbusRTUServer.inputRegisterWrite(PRESS_SENSOR_REG,pressure);
-    
     // To debug
     if (debug_flag)
     {
