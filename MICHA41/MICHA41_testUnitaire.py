@@ -24,7 +24,7 @@ PAUSE_BTN_PIN               = 13    # pin on which the pause button is connected
 STOP_BTN_PIN                = 33    # pin on which the start button is connected
 START_LED_PIN               = 16    # pin on which the start led is connected
 PAUSE_LED_PIN               = 18    # pin on which the pause led is connected
-STATE_LED_PIN               = 36     # pin on which the state led is connected
+STATE_LED_PIN               = 36    # pin on which the state led is connected
 BUZZER_PIN                  = 35    # pin on which the buzzer is connected
 # pin configuration
 GPIO.setup(START_BTN_PIN, GPIO.IN)
@@ -711,11 +711,12 @@ if __name__ == "__main__":
             print("\nState led pin state sets to 1\n")
         elif choice=='eprl0': # sets the red led state to 0 (state led)
             pasto.set_stateLed(0)
+            print("\nState led pin state sets to 0\n")
         
         return 0
         
     def buzzer(choice):
-        """Get the set a value related to the buzzer"""
+        """Get or set set the value related to the buzzer"""
         
         if choice=='bs': # gets the state of the buzzer pin
             print("\nBuzzer pin state = {}\n".format(pasto.get_buzzer()))
@@ -738,9 +739,9 @@ if __name__ == "__main__":
         print(" GENERAL\n",
               "-------\n",
               "all \t- Show all register/state values\n",
-              "bs \t- Show the buzzer pin state",
-              "b0 \t- Set the buzzer pin state to 0",
-              "b1 \t- Set the buzzer pin state to 1",
+              "bs \t- Show the buzzer pin state\n",
+              "b0 \t- Set the buzzer pin state to 0\n",
+              "b1 \t- Set the buzzer pin state to 1\n",
               "bss \t- Show boot state\n",
               "dms \t- Show debug mode state\n",
               "dm0 \t- Set debug mode to 0 (OFF)\n",

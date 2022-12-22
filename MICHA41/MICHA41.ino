@@ -18,8 +18,8 @@
 //          - deletion of all the code line related to the previous pins and registers
 //          - following pins arLEVEL_SENSOR1_REG added: PRESS_SENSOR_PIN, LEVEL_SENSOR1_PIN, LEVEL_SENSOR2_PIN, EMERGENCY_STOP_PIN
 //          - following variables are added:
-//              - level1_flag: to enable/disable the use of the level sensor 1
-//              - level2_flag: to enable/disable the use of the level sensor 2
+//              - level1_flag: default value (1 or 0) if level sensor 1 is unplugged
+//              - level2_flag: default value (1 or 0) if level sensor 2 is unplugged
 //              - press_flag: to enable/disable the use of the pressure sensor
 //          - following registers are added: PRESS_SENSOR_REG, LEVEL_SENSOR1_REG, LEVEL_SENSOR2_REG, EMERGENCY_STOP_REG,
 //            LEVEL1_FLAG_REG, LEVEL2_FLAG_REG, PRESS_FLAG_REG
@@ -27,7 +27,7 @@
 //          - following regsister is updated: THERMIS_POW_REG (0x00 instead of 0x01)
 //          - deletion of V1 and V2 PCB
 //          - new functions: 
-//            - manage_levels(): polls the level sensor and stops the pump if the input tank is empty (level 1) or the outpit tank is full (level 2)
+//            - manage_levels(): polls the level sensor and stops the pump if the input tank is empty (level 1) or the output tank is full (level 2)
 //            - get_pressure(): poll the pressure sensor
 //            - stop_pump(): stops the pump (this function is called at several place)
 //  - v2.0.0:
@@ -104,7 +104,7 @@
 #include <ArduinoModbus.h>
 #include <FlashStorage.h>
 #include <SAMD21turboPWM.h>
-#include "MICHA40_configuration.h"    // register configuration and pin assignment file
+#include "MICHA41_configuration.h"    // register configuration and pin assignment file
 
 // To store the ID in the flash memory
 struct StructID
@@ -253,6 +253,7 @@ void loop() {
   uint32_t tps = millis();
   uint32_t interval1 = tps - time_ref1;               // for 1 s interval
   uint32_t interval2 = tps - time_ref2;               // for 35 ms interval 
+  uint32_t requests = 0;   // number of requests received
     
   if(interval1>1000) // 1 s passed
   {
@@ -264,8 +265,11 @@ void loop() {
       Serial.println(id.id);
 
       int freq = pwm.frequency(1);
-      Serial.print("Frq=");
+      Serial.print(", Frq=");
       Serial.print(freq);
+      
+      Serial.print(", Nb.Req=");
+      Serial.print(requests);
       
       Serial.println();
     }
@@ -273,26 +277,28 @@ void loop() {
     get_pressure();
     
     time_ref1 = tps;
+
+    if (requests == 0) {
+      // TODO: Implement a "security mode" to protect the machine if the master is not running for x? seconds --> no heating, no pumping
+    }
+    requests = 0;
   }
 
   if (interval2 > 35) // 35 ms passed
   {
     debug_flag = ModbusRTUServer.coilRead(DEBUG_FLAG_REG);
     speed_step = ModbusRTUServer.holdingRegisterRead(PUMP_SPEED_INC_REG);
-    level1_flag = ModbusRTUServer.coilRead(LEVEL1_FLAG_REG);
-    level2_flag = ModbusRTUServer.coilRead(LEVEL2_FLAG_REG);
 
-    ModbusRTUServer.poll(); // scans if a command is coming from the master
+    // An updated library is needed to receive an indication of requests treated...
+    /*requests += */ModbusRTUServer.poll(); // scans if a command is coming from the master
 
     manage_emergency_stop();
     manage_id();
     manage_pump();
     manage_tanks();
     manage_valves();
-    if(level1_flag || level2_flag)  //if one of the level sensor flag is enable, manage levels
-    {
-      manage_levels();
-    }
+    manage_levels();
+    manage_pressure();
 
     time_ref2 = tps;
   }
@@ -310,15 +316,9 @@ void manage_emergency_stop()
 // Reads and stores the level sensor values into the register
 void manage_levels()
 {
-  if(level1_flag)  //if the monitoring of the input level is enable
-  {
+    level1_flag = ModbusRTUServer.coilRead(LEVEL1_FLAG_REG);
+    pinMode(LEVEL_SENSOR1_PIN, level1_flag==1 ? INPUT_PULLUP : INPUT_PULLDOWN);
     uint8_t level_sensor1 = digitalRead(LEVEL_SENSOR1_PIN);
-
-    if(!level_sensor1) //if the level sensor 1 detects air (empty tank), stop the pump
-    {
-      stop_pump();
-    }
-
     ModbusRTUServer.discreteInputWrite(LEVEL_SENSOR1_REG,level_sensor1);
 
     // To debug
@@ -328,19 +328,12 @@ void manage_levels()
       Serial.print(level_sensor1);
       Serial.println(";\n");
     }
-  }
 
-  if(level2_flag)  //if the monitoring of the output level is enable
-  {
+    level2_flag = ModbusRTUServer.coilRead(LEVEL2_FLAG_REG);
+    pinMode(LEVEL_SENSOR2_PIN, level2_flag==1 ? INPUT_PULLUP : INPUT_PULLDOWN);
     uint8_t level_sensor2 = digitalRead(LEVEL_SENSOR2_PIN);
-
+    
     ModbusRTUServer.discreteInputWrite(LEVEL_SENSOR2_REG,level_sensor2);
-
-    if(level_sensor2) //if the level sensor 2 detects water (full tank), stop the pump
-    {
-      stop_pump();
-    }
-
     // To debug
     if (debug_flag)
     {
@@ -348,7 +341,6 @@ void manage_levels()
       Serial.print(level_sensor2);
       Serial.println(";\n");
     }
-  }
 }
 
 // Updates the solenoid outputs when a register is modified
@@ -377,6 +369,29 @@ void manage_tanks()
     }
     digitalWrite(TANK1_PIN,tank1);
   }
+}
+
+uint32_t pressure = 0;             // to store the raw pressure values in the goal to compute an average
+uint16_t pressure_min = 4096;      // to store the raw pressure values in the goal to compute an average
+uint16_t pressure_max = 0;             // to store the raw pressure values in the goal to compute an average
+uint16_t nb_pressures = 0;
+
+// Updates the pressure with current value
+void manage_pressure()
+{      
+    press_flag = ModbusRTUServer.coilRead(PRESS_FLAG_REG);
+    if (press_flag)
+    {
+      uint16_t measure = analogRead(PRESS_SENSOR_PIN);
+      pressure = pressure + measure;
+      if (measure > 0 && measure < pressure_min) {
+        pressure_min = measure;
+      }
+      if (measure > pressure_max) {
+        pressure_max = measure;
+      }
+      nb_pressures = nb_pressures + 1 ;
+    }
 }
 
 // Reads and stores the thermistor values into the registers (the storage value is an average of 3 successive values)
@@ -425,33 +440,36 @@ void get_thermis()
   }
 }
 
-// Reads and stores the pressure values into the register (the storage value is an average of 3 successive values)
 void get_pressure()
 {
   press_flag = ModbusRTUServer.coilRead(PRESS_FLAG_REG);
   
   if(press_flag)  //if the monitoring of the pressure sensor is enable
   {
-    uint16_t pressure = 0;             // to store the raw pressure values in the goal to compute an average
-    
-    for(int8_t i=0;i<3;i++) // reading 3 values
-    {
-      delay(10);
-      
-      pressure = pressure + analogRead(PRESS_SENSOR_PIN);
-    }
-  
-    pressure = pressure/3;  // average of the 3 values
-  
-    // Storing the average in the register
-    ModbusRTUServer.inputRegisterWrite(PRESS_SENSOR_REG,pressure);
-    
-    // To debug
     if (debug_flag)
     {
-      Serial.print("Pression (brute) = ");
+      Serial.print("Pression (total) = ");
+      Serial.print(pressure_min);
+      Serial.print(" =< ");
       Serial.print(pressure);
+      Serial.print(" / ");
+      Serial.print(nb_pressures);
+      Serial.print(" <= ");
+      Serial.print(pressure_max);
       Serial.println(";\n");
+    }
+    if (nb_pressures > 0)
+    {
+        // To debug
+        pressure = pressure / nb_pressures ;  // average of cumulated values
+        // Storing the average in the register
+        ModbusRTUServer.inputRegisterWrite(PRESS_SENSOR_REG,pressure);
+        ModbusRTUServer.inputRegisterWrite(PRESS_MIN_SENSOR_REG,pressure_min);
+        ModbusRTUServer.inputRegisterWrite(PRESS_MAX_SENSOR_REG,pressure_max);
+        pressure = 0;
+        pressure_min = 4096;
+        pressure_max = 0;
+        nb_pressures = 0;
     }
   }
 }

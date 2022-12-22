@@ -41,7 +41,9 @@ uint16_t speed_step = 400;    // default speed Hz decrease/increase
 #define THERMI2_REG                       0x02   // register which stores the thermistor 2 value (0 (high temp) - 4095 (low temp))
 #define THERMI3_REG                       0x03   // register which stores the thermistor 3 value (0 (high temp) - 4095 (low temp))
 #define THERMI4_REG                       0x04   // register which stores the thermistor 4 value (0 (high temp) - 4095 (low temp))
-#define PRESS_SENSOR_REG                  0x10   // register which stores the pressure sensor value (0 (low pressure) - 4095 (high pressure))
+#define PRESS_SENSOR_REG                  0x18   // register which stores the pressure sensor value (0 (low pressure) - 4095 (high pressure))
+#define PRESS_MIN_SENSOR_REG              0x19   // register which stores the pressure sensor value (0 (low pressure) - 4095 (high pressure))
+#define PRESS_MAX_SENSOR_REG              0x1A   // register which stores the pressure sensor value (0 (low pressure) - 4095 (high pressure))
 #define ERROR_CODE_REG                    0x20   // register which stores the general error codes
 // holding registers
 #define ID_REG                            0x00   // register which stores the modbus ID

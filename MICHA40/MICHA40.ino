@@ -293,10 +293,7 @@ void loop() {
     {
       manage_levels();
     }
-    if(press_flag)
-    {
-      manage_pressure();
-    }
+    manage_pressure();
 
     time_ref2 = tps;
   }
@@ -389,8 +386,12 @@ uint16_t nb_pressures = 0;
 // Updates the pressure with current value
 void manage_pressure()
 {      
-    pressure += analogRead(PRESS_SENSOR_PIN);
-    nb_pressures++ ;
+    press_flag = ModbusRTUServer.coilRead(PRESS_FLAG_REG);
+    if (press_flag)
+    {
+      pressure = pressure + analogRead(PRESS_SENSOR_PIN);
+      nb_pressures = nb_pressures + 1 ;
+    }
 }
   
 
@@ -449,9 +450,9 @@ void get_pressure()
   {
     if (nb_pressures > 0)
     {
-        uint16_t pressure16 = pressure / nb_pressures;  // average of cumulated values
+        pressure = pressure / nb_pressures;  // average of cumulated values
         // Storing the average in the register
-        ModbusRTUServer.inputRegisterWrite(PRESS_SENSOR_REG,pressure16);
+        ModbusRTUServer.inputRegisterWrite(PRESS_SENSOR_REG,pressure);
         pressure = 0;
         nb_pressures = 0;
     }
