@@ -716,7 +716,7 @@ if __name__ == "__main__":
         return 0
         
     def buzzer(choice):
-        """Get or set set the value related to the buzzer"""
+        """Get or set the value related to the buzzer"""
         
         if choice=='bs': # gets the state of the buzzer pin
             print("\nBuzzer pin state = {}\n".format(pasto.get_buzzer()))
