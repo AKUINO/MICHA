@@ -12,6 +12,7 @@
 // WARNING: please verify the output states match with your hardware states (is it the same logic?)
 //
 // Version notes:
+//  - v4.6.0: adding speed measurement on "level 2" input (period2 flag)
 //  - v4.5.0:
 //          - pressure sensor is deleted
 //  - v4.0.0:
@@ -166,10 +167,13 @@ void setup()
   pinMode(THERMI2_PIN,INPUT);
   pinMode(THERMI3_PIN,INPUT);
   pinMode(THERMI4_PIN,INPUT);
-  pinMode(LEVEL_SENSOR1_PIN, INPUT);
-  pinMode(LEVEL_SENSOR2_PIN, INPUT);
+  pinMode(LEVEL_SENSOR1_PIN, INPUT_PULLUP);
+  pinMode(LEVEL_SENSOR2_PIN, INPUT_PULLDOWN);
   pinMode(EMERGENCY_STOP_REG, INPUT);
   
+  // Déclenchement uniquement sur le flanc montant
+  attachInterrupt(digitalPinToInterrupt(LEVEL_SENSOR2_PIN), sensorISR, RISING);
+
   // Output pin configuration
   pinMode(PUMP_SPEED_PIN,OUTPUT);
   pinMode(PUMP_DIR_PIN,OUTPUT);
@@ -205,6 +209,7 @@ void setup()
   ModbusRTUServer.coilWrite(THERMIS_POW_REG,0);                         // thermistors - power: OFF
   ModbusRTUServer.coilWrite(LEVEL1_FLAG_REG,level1_flag);               // level 1 sensor management: sets by level1_flag
   ModbusRTUServer.coilWrite(LEVEL2_FLAG_REG,level2_flag);               // level 2 sensor management: sets by level2_flag
+  ModbusRTUServer.coilWrite(PERIOD2_FLAG_REG,period2_flag);             // level 2 sensor management: check periodicity
   ModbusRTUServer.coilWrite(PUMP_DIR_REG,0);                            // pump - direction: 0
   ModbusRTUServer.coilWrite(PUMP_POW_REG,0);                            // pump - power: OFF
   ModbusRTUServer.coilWrite(TANK1_REG,0);                               // tank 1: OFF
@@ -280,6 +285,7 @@ void loop() {
     speed_step = ModbusRTUServer.holdingRegisterRead(PUMP_SPEED_INC_REG);
     level1_flag = ModbusRTUServer.coilRead(LEVEL1_FLAG_REG);
     level2_flag = ModbusRTUServer.coilRead(LEVEL2_FLAG_REG);
+    period2_flag = ModbusRTUServer.coilRead(PERIOD2_FLAG_REG);
 
     ModbusRTUServer.poll(); // scans if a command is coming from the master
 
@@ -292,7 +298,10 @@ void loop() {
     {
       manage_levels();
     }
-
+    if(period2_flag)  //if one of the level sensor flag is enable, manage levels
+    {
+      manage_periodicity();  
+    }
     time_ref2 = tps;
   }
   delay(1);
@@ -304,6 +313,86 @@ void manage_emergency_stop()
   uint8_t emergency_level = digitalRead(EMERGENCY_STOP_PIN);
 
   ModbusRTUServer.discreteInputWrite(EMERGENCY_STOP_REG,emergency_level);
+}
+
+// Variables partagées avec l'ISR (doivent être 'volatile')
+volatile uint32_t lastEdgeTime = 0;
+volatile uint32_t periodDuration = 0; // mesurée en microsecondes
+volatile bool newDataReady = false;
+volatile bool isStopped = true;       // Démarre en état "arrêté"
+
+// Variable globale 16 bits à exposer dans votre registre Modbus (Input ou Holding)
+uint16_t modbusPeriodRegister = 0; 
+
+// Routine de service d'interruption (ISR)
+void sensorISR() {
+  uint32_t currentTime = micros();
+  
+  if (isStopped) {
+    // Premier flanc après un arrêt : on relance la synchronisation
+    isStopped = false;
+    lastEdgeTime = currentTime;
+  } else {
+    uint32_t duration = currentTime - lastEdgeTime;
+    
+    // Filtre matériel : Ne traiter que si la période >= 25 000 us (<= 40 Hz)
+    if (duration >= period2_min) {
+      periodDuration = duration;
+      lastEdgeTime = currentTime;
+      newDataReady = true;
+    }
+    // Les flancs parasites survenant en moins de 25ms sont ignorés
+  }
+}
+
+bool processData = false;
+bool currentlyStopped = false;
+
+uint32_t currentMicros = micros();
+uint32_t currentPeriod = 0;
+
+void manage_periodicity()
+{
+  if (period2_flag)
+  {
+    // --- SECTION CRITIQUE ---
+    noInterrupts();
+    
+    // Vérification du timeout (1 seconde = 1 000 000 us)
+    // La soustraction (currentMicros - lastEdgeTime) gère naturellement 
+    // le dépassement (overflow) de micros() toutes les ~70 minutes.
+    if (!isStopped && ((currentMicros - lastEdgeTime) > 1000000UL)) {
+      isStopped = true;
+      newDataReady = false;
+    }
+    
+    if (newDataReady) {
+      currentPeriod = periodDuration;
+      newDataReady = false;
+      processData = true;
+    }
+    
+    currentlyStopped = isStopped;
+    interrupts();
+    // --- FIN DE SECTION CRITIQUE ---
+  
+    // --- TRAITEMENT ET MISE À JOUR DU REGISTRE ---
+    if (currentlyStopped) {
+      // 0 signifie "débit nul / arrêt"
+      modbusPeriodRegister = 0; 
+    } else if (processData) {
+      // Conversion des microsecondes en dixièmes de milliseconde
+      // Exemple : 25 200 us / 100 = 252 (qui rentre dans un uint16_t)
+      modbusPeriodRegister = (uint16_t)(currentPeriod / 100);
+      ModbusRTUServer.inputRegisterWrite(PERIOD_SENSOR2_REG,modbusPeriodRegister);
+  
+      if (debug_flag)
+      {
+        Serial.print("Periode (us): "); Serial.print(currentPeriod);
+        Serial.print(" | Valeur Registre Modbus: "); Serial.println(modbusPeriodRegister);
+      }
+    }
+  }
 }
 
 // Reads and stores the level sensor values into the register
@@ -329,7 +418,7 @@ void manage_levels()
     }
   }
 
-  if(level2_flag)  //if the monitoring of the output level is enable
+  if(level2_flag == 1)  //if the monitoring of the output level is enable
   {
     uint8_t level_sensor2 = digitalRead(LEVEL_SENSOR2_PIN);
 

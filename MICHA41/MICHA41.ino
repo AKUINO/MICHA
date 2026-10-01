@@ -165,9 +165,9 @@ void setup()
   pinMode(THERMI3_PIN,INPUT);
   pinMode(THERMI4_PIN,INPUT);
   pinMode(PRESS_SENSOR_PIN, INPUT);
-  pinMode(LEVEL_SENSOR1_PIN, INPUT);
-  pinMode(LEVEL_SENSOR2_PIN, INPUT);
-  pinMode(EMERGENCY_STOP_REG, INPUT);
+  pinMode(LEVEL_SENSOR1_PIN, INPUT_PULLUP);
+  pinMode(LEVEL_SENSOR2_PIN, INPUT_PULLDOWN);
+  pinMode(EMERGENCY_STOP_PIN, INPUT);
   
   // Output pin configuration
   pinMode(PUMP_SPEED_PIN,OUTPUT);

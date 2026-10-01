@@ -41,6 +41,7 @@ GPIO.setup(BUZZER_PIN, GPIO.OUT)
 THERMIS_POW_REG             = 0x00  # register which stores the thermistor power state
 LEVEL1_FLAG_REG             = 0x01  # register which stores the flag which enables/disables the level 1 sensor management
 LEVEL2_FLAG_REG             = 0x02  # register which stores the flag which enables/disables the level 2 sensor management
+PERIOD2_FLAG_REG            = 0x12  # register which stores the flag which enables/disables the level 2 sensor management
 PUMP_DIR_REG                = 0x10  # register which stores the pump direction
 PUMP_POW_REG                = 0x11  # register which stores the pump power state
 TANK1_REG                   = 0x20  # register which stores the tank 1 state
@@ -50,6 +51,7 @@ DEBUG_FLAG_REG              = 0x41  # register which stores the state of the deb
 # discrete registers
 LEVEL_SENSOR1_REG           = 0x01  # register which stores the state of the input level sensor (1 for water)
 LEVEL_SENSOR2_REG           = 0x02  # register which stores the state of the output level sensor (1 for water)
+PERIOD_SENSOR2_REG          = 0x12  # register which stores the periodicity of the output level sensor (1 for water)
 EMERGENCY_STOP_REG          = 0x10  # register which stores the state of  the emergency stop button (0 for active emergency stop)
 # input registers
 GEN_STATE_REG               = 0x00  # register which stores the general state of the system

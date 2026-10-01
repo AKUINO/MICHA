@@ -13,9 +13,9 @@
 boolean debug_flag = false;   // debug mode enable flag (with debug_flag false, less Serial.print, better timing...)
 boolean level1_flag = false;  // allow to enable/disable the level 1 sensor management, i.e. the input level monitoring (0 = disable)
 boolean level2_flag = false;  // allow to enable/disable the level 2 sensor management, i.e. the output level monitoring (0 = disable)
+boolean period2_flag = false; // allow to enable/disable the level 2 sensor management to measure oscillation periodicity (0 = disable)
 uint16_t speed_step = 400;    // default speed Hz decrease/increase
-
-
+uint32_t period2_min = 25000;   // pulse under 25ms are rejected
 
 
 // configuration of the relative register adresses
@@ -23,6 +23,7 @@ uint16_t speed_step = 400;    // default speed Hz decrease/increase
 #define THERMIS_POW_REG                   0x00   // register which stores the thermistor power state
 #define LEVEL1_FLAG_REG                   0x01   // register which stores the flag which enables/disables the level 1 sensor management
 #define LEVEL2_FLAG_REG                   0x02   // register which stores the flag which enables/disables the level 2 sensor management
+#define PERIOD2_FLAG_REG                  0x12   // register which stores the flag which enables/disables the level 2 sensor oscillation period measurement
 #define PUMP_DIR_REG                      0x10   // register which stores the pump direction
 #define PUMP_POW_REG                      0x11   // register which stores the pump power state
 #define TANK1_REG                         0x20   // register which stores the tank 1 state
@@ -39,6 +40,7 @@ uint16_t speed_step = 400;    // default speed Hz decrease/increase
 #define THERMI2_REG                       0x02   // register which stores the thermistor 2 value (0 (high temp) - 4095 (low temp))
 #define THERMI3_REG                       0x03   // register which stores the thermistor 3 value (0 (high temp) - 4095 (low temp))
 #define THERMI4_REG                       0x04   // register which stores the thermistor 4 value (0 (high temp) - 4095 (low temp))
+#define PERIOD_SENSOR2_REG                0x12   // register which stores the duration (1/10 of msec) of the last pulse received on level 2 sensor. 0 if none.
 #define ERROR_CODE_REG                    0x20   // register which stores the general error codes
 // holding registers
 #define ID_REG                            0x00   // register which stores the modbus ID
