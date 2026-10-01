@@ -129,6 +129,8 @@ boolean stopped = true;           // flag to be able to force the complete stop 
 // miscellaneous variables
 uint32_t time_ref1 = 0;           // thermistor reading reference time
 uint32_t time_ref2 = 0;           // reference time for other operations
+uint16_t modbusPeriodRegister = 0; 
+
 
 StructID id;                      // stores the ID for the flash memory
 
@@ -250,6 +252,7 @@ void setup()
         break;
     }
   }
+
   Serial.println("Setup done.");
 }
 
@@ -266,12 +269,13 @@ void loop() {
     {
       Serial.print("\n");
       Serial.print("Slave ID = ");
-      Serial.println(id.id);
+      Serial.print(id.id);
 
       int freq = pwm.frequency(1);
-      Serial.print("Frq=");
+      Serial.print(", PWM Frq=");
       Serial.print(freq);
-      
+      Serial.print(", Output Level Period=");
+      Serial.print(modbusPeriodRegister);
       Serial.println();
     }
     get_thermis();
@@ -321,9 +325,6 @@ volatile uint32_t periodDuration = 0; // mesurée en microsecondes
 volatile bool newDataReady = false;
 volatile bool isStopped = true;       // Démarre en état "arrêté"
 
-// Variable globale 16 bits à exposer dans votre registre Modbus (Input ou Holding)
-uint16_t modbusPeriodRegister = 0; 
-
 // Routine de service d'interruption (ISR)
 void sensorISR() {
   uint32_t currentTime = micros();
@@ -348,13 +349,15 @@ void sensorISR() {
 bool processData = false;
 bool currentlyStopped = false;
 
-uint32_t currentMicros = micros();
+uint32_t currentMicros = 0;
 uint32_t currentPeriod = 0;
 
 void manage_periodicity()
 {
   if (period2_flag)
   {
+    currentMicros = micros();
+    
     // --- SECTION CRITIQUE ---
     noInterrupts();
     
@@ -384,14 +387,8 @@ void manage_periodicity()
       // Conversion des microsecondes en dixièmes de milliseconde
       // Exemple : 25 200 us / 100 = 252 (qui rentre dans un uint16_t)
       modbusPeriodRegister = (uint16_t)(currentPeriod / 100);
-      ModbusRTUServer.inputRegisterWrite(PERIOD_SENSOR2_REG,modbusPeriodRegister);
-  
-      if (debug_flag)
-      {
-        Serial.print("Periode (us): "); Serial.print(currentPeriod);
-        Serial.print(" | Valeur Registre Modbus: "); Serial.println(modbusPeriodRegister);
-      }
     }
+    ModbusRTUServer.inputRegisterWrite(PERIOD_SENSOR2_REG,modbusPeriodRegister);
   }
 }
 
